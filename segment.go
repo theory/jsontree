@@ -1,21 +1,25 @@
 package jsontree
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/theory/jsonpath/spec"
+)
 
 // Segment represents a single segment in a JSONTree query.
 type Segment struct {
-	selectors  []selector
+	selectors  []spec.Selector
 	children   []*Segment
 	descendant bool
 }
 
 // Child creates and returns a child ([<selectors>]) Segment.
-func Child(sel ...selector) *Segment {
+func Child(sel ...spec.Selector) *Segment {
 	return &Segment{selectors: sel, children: []*Segment{}}
 }
 
 // Descendant creates and returns a descendant (..[<selectors>]) Segment.
-func Descendant(sel ...selector) *Segment {
+func Descendant(sel ...spec.Selector) *Segment {
 	return &Segment{selectors: sel, descendant: true, children: []*Segment{}}
 }
 
@@ -60,7 +64,7 @@ func (seg *Segment) writeTo(buf *strings.Builder, prefix string, last bool) {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
-		sel.writeTo(buf)
+		buf.WriteString(sel.String())
 	}
 	buf.WriteString("]\n")
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/theory/jsonpath/spec"
 	"github.com/theory/jsontree"
 )
 
@@ -55,12 +56,12 @@ func Example() {
 	// Create a JSONTree query to fetch
 	tree := jsontree.New(
 		// Select only "profile" from the root.
-		jsontree.Child(jsontree.Name("profile")).Append(
+		jsontree.Child(spec.Name("profile")).Append(
 			// Select any field under "profile" named "last".
-			jsontree.Descendant(jsontree.Name("last")),
+			jsontree.Descendant(spec.Name("last")),
 			// Select the "primary" field from any object under "contacts".
-			jsontree.Descendant(jsontree.Name("contacts")).Append(
-				jsontree.Child(jsontree.Name("primary")),
+			jsontree.Descendant(spec.Name("contacts")).Append(
+				jsontree.Child(spec.Name("primary")),
 			),
 		),
 	)

@@ -5,6 +5,8 @@ package jsontree
 
 import (
 	"fmt"
+
+	"github.com/theory/jsonpath/spec"
 )
 
 // JSONTree selects a subset of values in an entity and returns it. It preserves
@@ -67,9 +69,9 @@ func (jt *JSONTree) selectObjectSegment(seg *Segment, src, dst map[string]any) {
 func (jt *JSONTree) selectObject(seg *Segment, src, dst map[string]any) {
 	for _, sel := range seg.selectors {
 		switch sel := sel.(type) {
-		case Name:
+		case spec.Name:
 			jt.processKey(string(sel), seg, src, dst)
-		case wc:
+		case spec.WildcardSelector:
 			for k := range src {
 				jt.processKey(k, seg, src, dst)
 			}
@@ -249,16 +251,16 @@ func (jt *JSONTree) selectArraySegment(seg *Segment, src, dst []any) []any {
 func (jt *JSONTree) selectArray(n *Segment, src, dst []any) []any {
 	for _, sel := range n.selectors {
 		switch sel := sel.(type) {
-		case Index:
+		case spec.Index:
 			idx := int(sel)
 			if idx < len(src) {
 				dst = jt.processIndex(idx, n, src, dst)
 			}
-		case wc:
+		case spec.WildcardSelector:
 			for i := range src {
 				dst = jt.processIndex(i, n, src, dst)
 			}
-		case SliceSelector:
+		case spec.SliceSelector:
 			dst = jt.processSlice(n, sel, src, dst)
 		}
 	}
@@ -277,17 +279,17 @@ func (jt *JSONTree) selectArray(n *Segment, src, dst []any) []any {
 // so:
 //
 //	dst := make([]any, 0, cap(src))
-func (jt *JSONTree) processSlice(seg *Segment, sel SliceSelector, src, dst []any) []any {
+func (jt *JSONTree) processSlice(seg *Segment, sel spec.SliceSelector, src, dst []any) []any {
 	// When step == 0, no elements are selected.
 	switch {
-	case sel.step > 0:
-		lower, upper := sel.bounds(len(src))
-		for i := lower; i < upper; i += sel.step {
+	case sel.Step() > 0:
+		lower, upper := sel.Bounds(len(src))
+		for i := lower; i < upper; i += sel.Step() {
 			dst = jt.processIndex(i, seg, src, dst)
 		}
-	case sel.step < 0:
-		lower, upper := sel.bounds(len(src))
-		for i := upper; lower < i; i += sel.step {
+	case sel.Step() < 0:
+		lower, upper := sel.Bounds(len(src))
+		for i := upper; lower < i; i += sel.Step() {
 			dst = jt.processIndex(i, seg, src, dst)
 		}
 	}

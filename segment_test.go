@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/theory/jsonpath/spec"
 )
 
 func TestWriteNode(t *testing.T) {
@@ -21,31 +22,31 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*Segment{Child(Wildcard)},
+			segs: []*Segment{Child(spec.Wildcard)},
 			str:  "$\n└── [*]\n",
 		},
 		{
 			name: "one_key",
-			segs: []*Segment{Child(Name("foo"))},
+			segs: []*Segment{Child(spec.Name("foo"))},
 			str:  "$\n└── [\"foo\"]\n",
 		},
 		{
 			name: "two_keys",
-			segs: []*Segment{Child(Name("foo")), Child(Name("bar"))},
+			segs: []*Segment{Child(spec.Name("foo")), Child(spec.Name("bar"))},
 			str:  "$\n├── [\"foo\"]\n└── [\"bar\"]\n",
 		},
 		{
 			name: "two_keys_and_sub_keys",
 			segs: []*Segment{
-				Child(Name("foo")).Append(
-					Child(Name("x")),
-					Child(Name("y")),
-					Descendant(Name("z")),
+				Child(spec.Name("foo")).Append(
+					Child(spec.Name("x")),
+					Child(spec.Name("y")),
+					Descendant(spec.Name("z")),
 				),
-				Child(Name("bar")).Append(
-					Child(Name("a"), Index(42), Slice(0, 8, 2)),
-					Child(Name("b")),
-					Child(Name("c")),
+				Child(spec.Name("bar")).Append(
+					Child(spec.Name("a"), spec.Index(42), spec.Slice(0, 8, 2)),
+					Child(spec.Name("b")),
+					Child(spec.Name("c")),
 				),
 			},
 			str: `$
@@ -62,26 +63,26 @@ func TestWriteNode(t *testing.T) {
 		{
 			name: "mixed_and_deep",
 			segs: []*Segment{
-				Child(Name("foo")).Append(
-					Child(Name("x")),
-					Child(Name("y")).Append(
-						Child(Wildcard).Append(
-							Child(Name("a")),
-							Child(Name("b")),
+				Child(spec.Name("foo")).Append(
+					Child(spec.Name("x")),
+					Child(spec.Name("y")).Append(
+						Child(spec.Wildcard).Append(
+							Child(spec.Name("a")),
+							Child(spec.Name("b")),
 						),
 					),
 				),
-				Child(Name("bar")).Append(
-					Child(Name("go")),
-					Child(Name("z")).Append(
-						Child(Wildcard).Append(
-							Child(Name("c")),
-							Child(Name("d")).Append(
-								Child(Slice(2, 3)),
+				Child(spec.Name("bar")).Append(
+					Child(spec.Name("go")),
+					Child(spec.Name("z")).Append(
+						Child(spec.Wildcard).Append(
+							Child(spec.Name("c")),
+							Child(spec.Name("d")).Append(
+								Child(spec.Slice(2, 3)),
 							),
 						),
 					),
-					Child(Name("hi")),
+					Child(spec.Name("hi")),
 				),
 			},
 			str: `$
@@ -103,41 +104,41 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*Segment{Child(Wildcard)},
+			segs: []*Segment{Child(spec.Wildcard)},
 			str:  "$\n└── [*]\n",
 		},
 		{
 			name: "one_index",
-			segs: []*Segment{Child(Index(0))},
+			segs: []*Segment{Child(spec.Index(0))},
 			str:  "$\n└── [0]\n",
 		},
 		{
 			name: "two_indexes",
-			segs: []*Segment{Child(Index(0), Index(2))},
+			segs: []*Segment{Child(spec.Index(0), spec.Index(2))},
 			str:  "$\n└── [0,2]\n",
 		},
 		{
 			name: "other_two_indexes",
-			segs: []*Segment{Child(Index(0)), Child(Index(2))},
+			segs: []*Segment{Child(spec.Index(0)), Child(spec.Index(2))},
 			str:  "$\n├── [0]\n└── [2]\n",
 		},
 		{
 			name: "index_index",
-			segs: []*Segment{Child(Index(0)).Append(Child(Index(2)))},
+			segs: []*Segment{Child(spec.Index(0)).Append(Child(spec.Index(2)))},
 			str:  "$\n└── [0]\n    └── [2]\n",
 		},
 		{
 			name: "two_keys_and_sub_indexes",
 			segs: []*Segment{
-				Child(Name("foo")).Append(
-					Child(Index(0)),
-					Child(Index(1)),
-					Child(Index(2)),
+				Child(spec.Name("foo")).Append(
+					Child(spec.Index(0)),
+					Child(spec.Index(1)),
+					Child(spec.Index(2)),
 				),
-				Child(Name("bar")).Append(
-					Child(Index(3)),
-					Child(Index(4)),
-					Child(Index(5)),
+				Child(spec.Name("bar")).Append(
+					Child(spec.Index(3)),
+					Child(spec.Index(4)),
+					Child(spec.Index(5)),
 				),
 			},
 			str: `$
