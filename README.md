@@ -1,8 +1,9 @@
-# JSONTree
+RFC 9535 JSONPath Tree Queries in Go
+====================================
 
-**The jsontree Go package provides [RFC 9535] tree queries for JSON.**
+[![⚖️ MIT]][mit] [![📚 Docs]][docs] [![🗃️ Report Card]][card] [![🛠️ Build Status]][ci] [![📊 Coverage]][cov]
 
----
+The jsonpath package provides [RFC 9535 JSONPath] tree selection in Go.
 
 ## How it Works
 
@@ -62,6 +63,27 @@ Given an object, this JSONTree will:
 *   If the value of "bar" is an object that contains the key "hi", add that
     full path to the result
 
+## Copyright
+
+Copyright © 2024 David E. Wheeler
+
+  [⚖️ MIT]: https://img.shields.io/badge/License-MIT-blue.svg "⚖️ MIT License"
+  [mit]: https://opensource.org/license/MIT "⚖️ MIT License"
+  [📚 Docs]: https://godoc.org/github.com/theory/jsontree?status.svg "📚 Documentation"
+  [docs]: https://pkg.go.dev/github.com/theory/jsontree "📄 Documentation"
+  [🗃️ Report Card]: https://goreportcard.com/badge/github.com/theory/jsontree
+    "🗃️ Report Card"
+  [card]: https://goreportcard.com/report/github.com/theory/jsontree
+    "🗃️ Report Card"
+  [🛠️ Build Status]: https://github.com/theory/jsontree/actions/workflows/ci.yml/badge.svg
+    "🛠️ Build Status"
+  [ci]: https://github.com/theory/jsontree/actions/workflows/ci.yml
+    "🛠️ Build Status"
+  [📊 Coverage]: https://codecov.io/gh/theory/jsontree/graph/badge.svg?token=TjLPa2bF5s
+    "📊 Code Coverage"
+  [cov]: https://codecov.io/gh/theory/jsontree "📊 Code Coverage"
+  [RFC 9535 JSONPath]: https://www.rfc-editor.org/rfc/rfc9535.html
+    "RFC 9535 JSONPath: Query Expressions for JSON"
   [RFC 9535]: https://datatracker.ietf.org/doc/rfc9535/
     "JSONPath: Query Expressions for JSON"
   [github.com/theory/jsonpath]: https://pkg.go.dev/github.com/theory/jsonpath
