@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/theory/jsonpath"
 	"github.com/theory/jsonpath/spec"
 )
 
@@ -85,10 +86,92 @@ func TestObjectSelection(t *testing.T) {
 			exp:  map[string]any{"y": map[string]any{"a": 1}},
 		},
 		{
+			name: "filter_object",
+			segs: []*Segment{Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.SingularQuery(false, []spec.Selector{spec.Name("a")}),
+					spec.GreaterThanEqualTo,
+					spec.Literal(int64(42)),
+				),
+			}}))},
+			obj: map[string]any{
+				"kim":   map[string]any{"a": 42, "firm": "HHM"},
+				"jimmy": map[string]any{"a": 41, "firm": "JMM"},
+				"chuck": map[string]any{"a": 43, "firm": "on leave"},
+			},
+			exp: map[string]any{
+				"kim":   map[string]any{"a": 42, "firm": "HHM"},
+				"chuck": map[string]any{"a": 43, "firm": "on leave"},
+			},
+		},
+		{
+			name: "filter_object_key",
+			segs: []*Segment{Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.SingularQuery(false, []spec.Selector{spec.Name("a")}),
+					spec.GreaterThanEqualTo,
+					spec.Literal(int64(42)),
+				),
+			}})).Append(Child(spec.Name("firm")))},
+			obj: map[string]any{
+				"kim":   map[string]any{"a": 42, "firm": "HHM"},
+				"jimmy": map[string]any{"a": 41, "firm": "JMM"},
+				"chuck": map[string]any{"a": 43, "firm": "on leave"},
+			},
+			exp: map[string]any{
+				"kim":   map[string]any{"firm": "HHM"},
+				"chuck": map[string]any{"firm": "on leave"},
+			},
+		},
+		{
 			name: "multiple_keys",
 			segs: []*Segment{Child(spec.Name("x")), Child(spec.Name("y"))},
 			obj:  map[string]any{"x": true, "y": []any{1, 2}, "z": "hi"},
 			exp:  map[string]any{"x": true, "y": []any{1, 2}},
+		},
+		{
+			name: "key_and_filter",
+			segs: []*Segment{Child(spec.Name("x")), Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.SingularQuery(false, []spec.Selector{spec.Name("z")}),
+					spec.EqualTo,
+					spec.Literal("hi"),
+				),
+			}}))},
+			obj: map[string]any{"x": true, "y": map[string]any{"z": "hi"}, "z": "hi"},
+			exp: map[string]any{"x": true, "y": map[string]any{"z": "hi"}},
+		},
+		{
+			name: "key_then_filter_cur_true",
+			segs: []*Segment{Child(spec.Name("y")).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(0))})),
+			}})))},
+			obj: map[string]any{"x": true, "y": map[string]any{"z": []any{1}}, "z": "hi"},
+			exp: map[string]any{"y": map[string]any{"z": []any{1}}},
+		},
+		{
+			name: "key_then_filter_cur_false",
+			segs: []*Segment{Child(spec.Name("y")).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(1))})),
+			}})))},
+			obj: map[string]any{"x": true, "y": map[string]any{"z": []any{1}}, "z": "hi"},
+			exp: map[string]any{},
+		},
+		{
+			name: "key_then_filter_root_true",
+			segs: []*Segment{Child(spec.Name("y")).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))})),
+			}})))},
+			obj: map[string]any{"x": true, "y": map[string]any{"z": "hi"}, "z": "hi"},
+			exp: map[string]any{"y": map[string]any{"z": "hi"}},
+		},
+		{
+			name: "key_then_filter_root_false",
+			segs: []*Segment{Child(spec.Name("y")).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("a"))})),
+			}})))},
+			obj: map[string]any{"x": true, "y": map[string]any{"z": "hi"}, "z": "hi"},
+			exp: map[string]any{},
 		},
 		{
 			name: "three_level_path",
@@ -257,7 +340,7 @@ func TestObjectSelection(t *testing.T) {
 			// the segments in advance, but this check ensures it at runtime.
 			sel := &JSONTree{}
 			a.PanicsWithValue(tc.err, func() {
-				sel.selectObjectSegment(&Segment{children: tc.segs}, tc.src, tc.dst)
+				sel.selectObjectSegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
 	}
@@ -354,6 +437,60 @@ func TestArraySelection(t *testing.T) {
 				nil,
 				map[string]any{"y": "hi", "z": 1},
 			},
+		},
+		{
+			name: "filter_exists",
+			segs: []*Segment{Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(true, []*spec.Segment{})),
+				}}),
+			}}))},
+			ary: []any{1, 3},
+			exp: []any{1, 3},
+		},
+		{
+			name: "filter_compare",
+			segs: []*Segment{Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.SingularQuery(false, []spec.Selector{}),
+					spec.GreaterThanEqualTo,
+					spec.Literal(int64(42)),
+				),
+			}}))},
+			ary: []any{1, 64, 42, 2},
+			exp: []any{nil, 64, 42},
+		},
+		{
+			name: "key_then_filter_cur_true",
+			segs: []*Segment{Child(spec.Index(1)).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(1))})),
+			}})))},
+			ary: []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
+			exp: []any{nil, []any{nil, []any{99, 3}}},
+		},
+		{
+			name: "key_then_filter_cur_false",
+			segs: []*Segment{Child(spec.Index(1)).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(2))})),
+			}})))},
+			ary: []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
+			exp: []any{},
+		},
+		{
+			name: "key_then_filter_root_true",
+			segs: []*Segment{Child(spec.Index(1)).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Index(2))})),
+			}})))},
+			ary: []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
+			exp: []any{nil, []any{42, []any{99, 3}}},
+		},
+		{
+			name: "key_then_filter_root_false",
+			segs: []*Segment{Child(spec.Index(1)).Append(Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Index(3))})),
+			}})))},
+			ary: []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
+			exp: []any{},
 		},
 		{
 			name: "wildcard_indexes_index",
@@ -557,7 +694,7 @@ func TestArraySelection(t *testing.T) {
 			// runtime.
 			sel := &JSONTree{}
 			a.PanicsWithValue(tc.err, func() {
-				sel.selectArraySegment(&Segment{children: tc.segs}, tc.src, tc.dst)
+				sel.selectArraySegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
 	}
@@ -1051,6 +1188,98 @@ func TestDescendants(t *testing.T) {
 			t.Parallel()
 			sel := New(tc.segs...)
 			a.Equal(tc.exp, sel.Select(tc.input))
+		})
+	}
+}
+
+func TestFilterSelection(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name   string
+		path   string
+		input  any
+		output any
+	}{
+		{
+			name:   "root_exists",
+			path:   "$[?$]",
+			input:  []any{1, 2},
+			output: []any{1, 2},
+		},
+		{
+			name:   "current_exists",
+			path:   "$[?@]",
+			input:  []any{1, 2},
+			output: []any{1, 2},
+		},
+		{
+			name:   "current_gt_1",
+			path:   "$[? @ > 1]",
+			input:  []any{nil, 2},
+			output: []any{nil, 2},
+		},
+		{
+			name:   "current_lt_2",
+			path:   "$[? @ < 2]",
+			input:  []any{1, 2},
+			output: []any{1},
+		},
+		{
+			name:   "current_gt_2",
+			path:   "$[? @ > 2]",
+			input:  []any{1, 2},
+			output: []any{},
+		},
+		{
+			name:   "obj_current_gt_1",
+			path:   "$[? @ > 1]",
+			input:  map[string]any{"x": 1, "y": 2},
+			output: map[string]any{"y": 2},
+		},
+		{
+			name:   "obj_current_eq_1",
+			path:   "$[? @ == 1]",
+			input:  map[string]any{"x": 1, "y": 2},
+			output: map[string]any{"x": 1},
+		},
+		{
+			name:   "obj_root_exists",
+			path:   "$[? $]",
+			input:  map[string]any{"x": 1, "y": 2},
+			output: map[string]any{"x": 1, "y": 2},
+		},
+		{
+			name:   "obj_current_eq_1",
+			path:   "$[? @ == 1]",
+			input:  map[string]any{"x": 1, "y": 2},
+			output: map[string]any{"x": 1},
+		},
+		{
+			name: "obj_current_key_gt_name",
+			path: "$[? @.n > 12].name",
+			input: map[string]any{
+				"x": map[string]any{"n": 42, "name": "one"},
+				"y": 2,
+				"z": map[string]any{"n": 12, "name": "one"},
+			},
+			output: map[string]any{"x": map[string]any{"name": "one"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			path := jsonpath.MustParse(tc.path)
+			segs := make([]*Segment, len(path.Query().Segments()))
+			for i, s := range path.Query().Segments() {
+				segs[i] = Child(s.Selectors()...)
+				segs[i].descendant = s.IsDescendant()
+				if i > 0 {
+					segs[i-1].Append(segs[i])
+				}
+			}
+			tree := New(segs[0])
+			a.Equal(tc.output, tree.Select(tc.input))
 		})
 	}
 }

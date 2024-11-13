@@ -1,30 +1,17 @@
 # JSONTree
 
-**The jsontree Go package provides [RFC 9535]-inspired tree queries for JSON.**
+**The jsontree Go package provides [RFC 9535] tree queries for JSON.**
 
 ---
 
 ## How it Works
 
-The design is based on the [RFC 9535] JSONPath standard, where "Segments"
-contain "Selectors" that select one or more "children" or "descendants" of a
-JSON object or array. There are four types of selectors:
-
-*   "Name" selectors select the named child of an object.
-*   "Index" selectors select an indexed child of an array.
-*   "Wildcard" selectors select all children of a node; descendent wildcard
-*   "Slice" selectors select a series of elements from an array, giving a
-    selectors select *all* descendants of a node. start position, an end
-    position, and an optional step value that moves the position from the
-    start to the end.
-
-["Filter" selectors are not yet supported.]
-
-While JSONPath expresses segments as a path, where one segment leads to the
-next, JSONTree expresses them as a tree, where one segment leads to any number
-of subsequent segments. This allows multiple JSONPath expressions to be
-combined into a single query that can select multiple parts of a structured
-JSON value and preserve that subset of its structure.
+Relies on the [github.com/theory/jsonpath] package's [Selector]s for
+execution. But while JSONPath expresses segments as a path, where one segment
+leads to the next, JSONTree expresses them as a tree, where one segment leads
+to any number of subsequent segments. This allows multiple JSONPath
+expressions to be combined into a single query that can select multiple parts
+of a structured JSON value and preserve that subset of its structure.
 
 In other words, JSONPath represents a list of selectors:
 
@@ -77,3 +64,5 @@ Given an object, this JSONTree will:
 
   [RFC 9535]: https://datatracker.ietf.org/doc/rfc9535/
     "JSONPath: Query Expressions for JSON"
+  [github.com/theory/jsonpath]: https://pkg.go.dev/github.com/theory/jsonpath
+  [Selector]: https://pkg.go.dev/github.com/theory/jsonpath/spec#Selector

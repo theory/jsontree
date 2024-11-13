@@ -32,6 +32,11 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "two_keys",
+			segs: []*Segment{Child(spec.Name("foo"), spec.Name("bar"))},
+			str:  "$\n└── [\"foo\",\"bar\"]\n",
+		},
+		{
+			name: "two_segments",
 			segs: []*Segment{Child(spec.Name("foo")), Child(spec.Name("bar"))},
 			str:  "$\n├── [\"foo\"]\n└── [\"bar\"]\n",
 		},
@@ -151,6 +156,52 @@ func TestWriteNode(t *testing.T) {
     ├── [4]
     └── [5]
 `,
+		},
+		{
+			name: "filter",
+			segs: []*Segment{Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(true, []*spec.Segment{})),
+				}}),
+			}}))},
+			str: "$\n└── [?($)]\n",
+		},
+		{
+			name: "filter_and_key",
+			segs: []*Segment{
+				Child(spec.Name("x")),
+				Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+						spec.Existence(spec.Query(true, []*spec.Segment{})),
+					}}),
+				}})),
+			},
+			str: "$\n├── [\"x\"]\n└── [?($)]\n",
+		},
+		{
+			name: "filter_and_key_segment",
+			segs: []*Segment{
+				Child(
+					spec.Name("x"),
+					spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+						spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+							spec.Existence(spec.Query(true, []*spec.Segment{})),
+						}}),
+					}}),
+				),
+			},
+			str: "$\n└── [\"x\",?($)]\n",
+		},
+		{
+			name: "nested_filter",
+			segs: []*Segment{Child(spec.Name("x")).Append(
+				Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+						spec.Existence(spec.Query(true, []*spec.Segment{})),
+					}}),
+				}})),
+			)},
+			str: "$\n└── [\"x\"]\n    └── [?($)]\n",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
