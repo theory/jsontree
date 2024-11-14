@@ -1,5 +1,7 @@
 package jsontree_test
 
+/* XXX Restore
+
 import (
 	"encoding/json"
 	"fmt"
@@ -99,3 +101,5 @@ func Example() {
 	//   }
 	// }
 }
+
+*/

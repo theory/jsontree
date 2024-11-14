@@ -37,7 +37,7 @@ func TestRunRoot(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := &JSONTree{root: &Segment{}}
+			sel := &Tree{root: &Segment{}}
 			a.Equal(tc.val, sel.Select(tc.val))
 			switch tc.val.(type) {
 			case map[string]any, []any:
@@ -307,8 +307,8 @@ func TestObjectSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.obj))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.obj))
 		})
 	}
 
@@ -338,9 +338,9 @@ func TestObjectSelection(t *testing.T) {
 			t.Parallel()
 			// In general a value in dst should only be a map because we sanitize
 			// the segments in advance, but this check ensures it at runtime.
-			sel := &JSONTree{}
+			tree := &Tree{}
 			a.PanicsWithValue(tc.err, func() {
-				sel.selectObjectSegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
+				tree.selectObjectSegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
 	}
@@ -660,8 +660,8 @@ func TestArraySelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.ary))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.ary))
 		})
 	}
 
@@ -692,9 +692,9 @@ func TestArraySelection(t *testing.T) {
 			// In general a value in dst should only be a slice because we
 			// sanitize the segments in advance, but this check ensures it at
 			// runtime.
-			sel := &JSONTree{}
+			tree := &Tree{}
 			a.PanicsWithValue(tc.err, func() {
-				sel.selectArraySegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
+				tree.selectArraySegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
 	}
@@ -1048,8 +1048,8 @@ func TestSliceSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.ary))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.ary))
 		})
 	}
 }
@@ -1069,7 +1069,7 @@ func TestDescendants(t *testing.T) {
 		exp   any
 	}{
 		{
-			name:  "descendent_name",
+			name:  "descendant_name",
 			segs:  []*Segment{Descendant(spec.Name("j"))},
 			input: json,
 			exp: map[string]any{
@@ -1078,7 +1078,7 @@ func TestDescendants(t *testing.T) {
 			},
 		},
 		{
-			name:  "un_descendent_name",
+			name:  "un_descendant_name",
 			segs:  []*Segment{Descendant(spec.Name("o"))},
 			input: json,
 			exp:   map[string]any{"o": map[string]any{"j": 1, "k": 2}},
@@ -1186,8 +1186,8 @@ func TestDescendants(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.input))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.input))
 		})
 	}
 }
@@ -1278,8 +1278,72 @@ func TestFilterSelection(t *testing.T) {
 					segs[i-1].Append(segs[i])
 				}
 			}
-			tree := New(segs[0])
+			tree := Tree{Child().Append(segs[0])}
 			a.Equal(tc.output, tree.Select(tc.input))
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name  string
+		paths []string
+		exp   *Tree
+	}{
+		{
+			name:  "root only",
+			paths: []string{"$"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "one_name",
+			paths: []string{"$.a"},
+			exp:   &Tree{root: Child().Append(Child(spec.Name("a")))},
+		},
+		{
+			name:  "two_names",
+			paths: []string{"$.a.b"},
+			exp: &Tree{
+				root: Child().
+					Append(Child(spec.Name("a")).
+						Append(Child(spec.Name("b"))),
+					),
+			},
+		},
+		{
+			name:  "two_names_index",
+			paths: []string{"$.a.b[1]"},
+			exp: &Tree{
+				root: Child().
+					Append(Child(spec.Name("a")).
+						Append(Child(spec.Name("b")).
+							Append(Child(spec.Index(1))),
+						),
+					),
+			},
+		},
+		{
+			name:  "two_names_descendant",
+			paths: []string{"$.a..b"},
+			exp: &Tree{
+				root: Child().
+					Append(Child(spec.Name("a")).
+						Append(Descendant(spec.Name("b"))),
+					),
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			paths := make([]*jsonpath.Path, len(tc.paths))
+			for i, p := range tc.paths {
+				paths[i] = jsonpath.MustParse(p)
+			}
+			tree := New(paths...)
+			a.Equal(tc.exp, tree)
 		})
 	}
 }
