@@ -206,7 +206,7 @@ func TestWriteNode(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			n := JSONTree{root: &Segment{children: tc.segs}}
+			n := Tree{root: &Segment{children: tc.segs}}
 			a.Equal(tc.str, n.String())
 		})
 	}
