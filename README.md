@@ -5,6 +5,11 @@ RFC 9535 JSONPath Tree Queries in Go
 
 The jsonpath package provides [RFC 9535 JSONPath] tree selection in Go.
 
+> [!WARNING]
+> This package is currently under active development. Consider its API
+> unstable until it reaches a level of maturity that deserves a formal version
+> tag.
+
 ## How it Works
 
 Relies on the [github.com/theory/jsonpath] package's [Selector]s for
