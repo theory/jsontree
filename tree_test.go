@@ -1335,6 +1335,32 @@ func TestNew(t *testing.T) {
 					),
 			},
 		},
+		{
+			name:  "two_single_key_paths",
+			paths: []string{"$.a", "$.b"},
+			exp: &Tree{
+				root: Child().Append(Child(spec.Name("a"), spec.Name("b"))),
+			},
+		},
+		{
+			name:  "diff_parents_same_child",
+			paths: []string{"$.a.x", "$.b.x"},
+			exp: &Tree{
+				root: Child().Append(Child(spec.Name("a"), spec.Name("b")).
+					Append(Child(spec.Name("x"))),
+				),
+			},
+		},
+		{
+			name:  "two_identical_paths",
+			paths: []string{"$.a.b", "$.a.b"},
+			exp: &Tree{
+				root: Child().
+					Append(Child(spec.Name("a")).
+						Append(Child(spec.Name("b"))),
+					),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -1343,7 +1369,7 @@ func TestNew(t *testing.T) {
 				paths[i] = jsonpath.MustParse(p)
 			}
 			tree := New(paths...)
-			a.Equal(tc.exp, tree)
+			a.Equal(tc.exp.String(), tree.String())
 		})
 	}
 }

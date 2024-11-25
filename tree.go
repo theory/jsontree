@@ -24,13 +24,49 @@ func New(paths ...*jsonpath.Path) *Tree {
 	root := Child()
 	cur := root
 
-	for _, p := range paths {
-		for _, s := range p.Query().Segments() {
-			child := Child(s.Selectors()...)
-			child.descendant = s.IsDescendant()
-			cur.Append(child)
-			cur = child
+	for _, path := range paths {
+		segs := path.Query().Segments()
+		for i, seg := range segs {
+			switch len(cur.children) {
+			case 0:
+				// Easy case.
+				child := Child(seg.Selectors()...)
+				child.descendant = seg.IsDescendant()
+				cur.Append(child)
+				cur = child
+			case 1:
+				// Compare the path.
+				cur = cur.children[0]
+				if cur.isBranch(segs[i+1:]) {
+					// The branch is the same, append new selectors.
+					for _, sel := range seg.Selectors() {
+						if !cur.Contains(sel) {
+							cur.selectors = append(cur.selectors, sel)
+						}
+					}
+				} else {
+					// Different branches, start new child.
+					child := Child(seg.Selectors()...)
+					child.descendant = seg.IsDescendant()
+					cur.Append(child)
+					cur = child
+				}
+				// For each selector in s.Selectors()
+				//    For each child
+				//       If IsDescendant matches
+				//		   If the descendants are the same
+				//           If the child doesn't contain the selector
+				// 			   Append the child to the selector
+				//    If no child found matching
+				//      Create and append a new child with the selector.
+				//
+				// Things to consider:
+				//  Leaf branches with a wildcard or no descendants include branches *with* descendants,
+				//  so the latter can be discarded
+				//  Slices can be merged
+			}
 		}
+		cur = root
 	}
 
 	return &Tree{root: root}

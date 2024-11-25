@@ -218,6 +218,29 @@ func (seg *Segment) containsFilter(filter *spec.FilterSelector) bool {
 	return false
 }
 
+// isBranch returns true if seg's children constitute a single branch with the
+// same selectors and children.
+func (seg *Segment) isBranch(path []*spec.Segment) bool {
+	cur := seg
+	size := len(path)
+	for i, c := range path {
+		if i >= size || len(cur.children) != 1 {
+			return false
+		}
+		if cur.descendant != c.IsDescendant() {
+			return false
+		}
+
+		cur = cur.children[0]
+		for _, sel := range c.Selectors() {
+			if !cur.Contains(sel) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // String returns a string representation of seg, including all of its child
 // segments in as a tree diagram.
 func (seg *Segment) String() string {
