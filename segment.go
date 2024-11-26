@@ -241,6 +241,24 @@ func (seg *Segment) isBranch(path []*spec.Segment) bool {
 	return true
 }
 
+func (seg *Segment) mergeSelectors(spec *spec.Segment) *Segment {
+	for _, sel := range spec.Selectors() {
+		if !seg.Contains(sel) {
+			seg.selectors = append(seg.selectors, sel)
+		}
+	}
+	return seg
+}
+
+func (seg *Segment) containsAllSelectors(spec *spec.Segment) bool {
+	for _, sel := range spec.Selectors() {
+		if !seg.Contains(sel) {
+			return false
+		}
+	}
+	return true
+}
+
 // String returns a string representation of seg, including all of its child
 // segments in as a tree diagram.
 func (seg *Segment) String() string {

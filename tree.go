@@ -20,8 +20,6 @@ type Tree struct {
 
 // New compiles paths into a Tree that can be used to select all of their
 // paths.
-//
-//nolint:funlen,gocognit
 func New(paths ...*jsonpath.Path) *Tree {
 	root := Child()
 	cur := root
@@ -30,90 +28,40 @@ func New(paths ...*jsonpath.Path) *Tree {
 		segs := path.Query().Segments()
 	SEG:
 		for i, seg := range segs {
-			switch len(cur.children) {
-			case 0:
-				// New branch, append child with all selectors.
-				child := Child(seg.Selectors()...)
-				child.descendant = seg.IsDescendant()
-				cur.Append(child)
-				cur = child
-			case 1:
-				child := cur.children[0]
-				// Compare the path.
+			// Compare the path to each of the children.
+			for _, child := range cur.children {
 				switch {
 				case cur.children[0].isBranch(segs[i+1:]):
-					// The branch is the same, append new selectors.
-					cur = child
-					for _, sel := range seg.Selectors() {
-						if !cur.Contains(sel) {
-							cur.selectors = append(cur.selectors, sel)
-						}
-					}
+					// Branches equal; merge selectors and continue.
+					cur = child.mergeSelectors(seg)
+					continue SEG
 				case cur.descendant == seg.IsDescendant():
-					// Different branches; same parents?
-					for _, sel := range seg.Selectors() {
-						if !child.Contains(sel) {
-							// Different parents, append a new child.
-							child := Child(seg.Selectors()...)
-							child.descendant = seg.IsDescendant()
-							cur.Append(child)
-							cur = child
-							continue SEG
-						}
-						// Same parents, continue to the next segment.
-						cur = child
+					// Different branches; same selectors?
+					if !child.containsAllSelectors(seg) {
+						// Different parents, append a new child.
+						cur = newChild(cur, seg)
+						continue SEG
 					}
-				default:
-					// Different branches, start new child.
-					child := Child(seg.Selectors()...)
-					child.descendant = seg.IsDescendant()
-					cur.Append(child)
+					// Same parents, continue to the next segment.
 					cur = child
+					continue SEG
 				}
-				// For each selector in s.Selectors()
-				//    For each child
-				//       If IsDescendant matches
-				//		   If the descendants are the same
-				//           If the child doesn't contain the selector
-				// 			   Append the child to the selector
-				//    If no child found matching
-				//      Create and append a new child with the selector.
-				//
-				// Things to consider:
-				//  Leaf branches with a wildcard or no descendants include branches *with* descendants,
-				//  so the latter can be discarded
-				//  Slices can be merged
 			}
+
+			// No matching child, append a new one.
+			cur = newChild(cur, seg)
 		}
 		cur = root
 	}
 
 	return &Tree{root: root}
+}
 
-	// i := 0
-	// for {
-	// 	seenDepth := false
-	// 	seen := map[string]bool{}
-	// 	subs := []*spec.Selector{}
-	// 	for _, q := range paths {
-	// 		segs := q.Query().Segments()
-	// 		if len(segs) >= i+1 {
-	// 			seenDepth = true
-	// 			for _, sel := range segs[i].Selectors() {
-	// 				if seen[sel.String()] {
-
-	// 				} else {
-
-	// 					cur.Append(Child())
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// 	if !seenDepth {
-	// 		break
-	// 	}
-	// 	i++
-	// }
+func newChild(cur *Segment, seg *spec.Segment) *Segment {
+	child := Child(seg.Selectors()...)
+	child.descendant = seg.IsDescendant()
+	cur.Append(child)
+	return child
 }
 
 // String returns a string representation of seg, starting from "$" for the

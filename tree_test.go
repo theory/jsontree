@@ -1469,6 +1469,17 @@ func TestNew(t *testing.T) {
 				),
 			},
 		},
+		{
+			name:  "four_identical_paths",
+			paths: []string{"$.a.b", "$.a.b", "$.a.b", "$.a.b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
