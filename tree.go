@@ -32,7 +32,7 @@ func New(paths ...*jsonpath.Path) *Tree {
 		for i, seg := range segs {
 			switch len(cur.children) {
 			case 0:
-				// Easy case.
+				// New branch, append child with all selectors.
 				child := Child(seg.Selectors()...)
 				child.descendant = seg.IsDescendant()
 				cur.Append(child)
@@ -42,8 +42,8 @@ func New(paths ...*jsonpath.Path) *Tree {
 				// Compare the path.
 				switch {
 				case cur.children[0].isBranch(segs[i+1:]):
-					cur = child
 					// The branch is the same, append new selectors.
+					cur = child
 					for _, sel := range seg.Selectors() {
 						if !cur.Contains(sel) {
 							cur.selectors = append(cur.selectors, sel)
@@ -53,14 +53,14 @@ func New(paths ...*jsonpath.Path) *Tree {
 					// Different branches; same parents?
 					for _, sel := range seg.Selectors() {
 						if !child.Contains(sel) {
-							// Different parents, start a new child.
+							// Different parents, append a new child.
 							child := Child(seg.Selectors()...)
 							child.descendant = seg.IsDescendant()
 							cur.Append(child)
 							cur = child
 							continue SEG
 						}
-						// Same parents.
+						// Same parents, continue to the next segment.
 						cur = child
 					}
 				default:
