@@ -20,12 +20,15 @@ type Tree struct {
 
 // New compiles paths into a Tree that can be used to select all of their
 // paths.
+//
+//nolint:funlen,gocognit
 func New(paths ...*jsonpath.Path) *Tree {
 	root := Child()
 	cur := root
 
 	for _, path := range paths {
 		segs := path.Query().Segments()
+	SEG:
 		for i, seg := range segs {
 			switch len(cur.children) {
 			case 0:
@@ -35,16 +38,32 @@ func New(paths ...*jsonpath.Path) *Tree {
 				cur.Append(child)
 				cur = child
 			case 1:
+				child := cur.children[0]
 				// Compare the path.
-				cur = cur.children[0]
-				if cur.isBranch(segs[i+1:]) {
+				switch {
+				case cur.children[0].isBranch(segs[i+1:]):
+					cur = child
 					// The branch is the same, append new selectors.
 					for _, sel := range seg.Selectors() {
 						if !cur.Contains(sel) {
 							cur.selectors = append(cur.selectors, sel)
 						}
 					}
-				} else {
+				case cur.descendant == seg.IsDescendant():
+					// Different branches; same parents?
+					for _, sel := range seg.Selectors() {
+						if !child.Contains(sel) {
+							// Different parents, start a new child.
+							child := Child(seg.Selectors()...)
+							child.descendant = seg.IsDescendant()
+							cur.Append(child)
+							cur = child
+							continue SEG
+						}
+						// Same parents.
+						cur = child
+					}
+				default:
 					// Different branches, start new child.
 					child := Child(seg.Selectors()...)
 					child.descendant = seg.IsDescendant()

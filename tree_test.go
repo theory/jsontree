@@ -1307,32 +1307,35 @@ func TestNew(t *testing.T) {
 			name:  "two_names",
 			paths: []string{"$.a.b"},
 			exp: &Tree{
-				root: Child().
-					Append(Child(spec.Name("a")).
-						Append(Child(spec.Name("b"))),
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
 					),
+				),
 			},
 		},
 		{
 			name:  "two_names_index",
 			paths: []string{"$.a.b[1]"},
 			exp: &Tree{
-				root: Child().
-					Append(Child(spec.Name("a")).
-						Append(Child(spec.Name("b")).
-							Append(Child(spec.Index(1))),
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Index(1)),
 						),
 					),
+				),
 			},
 		},
 		{
 			name:  "two_names_descendant",
 			paths: []string{"$.a..b"},
 			exp: &Tree{
-				root: Child().
-					Append(Child(spec.Name("a")).
-						Append(Descendant(spec.Name("b"))),
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Descendant(spec.Name("b")),
 					),
+				),
 			},
 		},
 		{
@@ -1343,22 +1346,127 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:  "diff_parents_same_child",
-			paths: []string{"$.a.x", "$.b.x"},
+			name:  "two_identical_paths",
+			paths: []string{"$.a.b", "$.a.b"},
 			exp: &Tree{
-				root: Child().Append(Child(spec.Name("a"), spec.Name("b")).
-					Append(Child(spec.Name("x"))),
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
 				),
 			},
 		},
 		{
-			name:  "two_identical_paths",
-			paths: []string{"$.a.b", "$.a.b"},
+			name:  "diff_parents_same_child",
+			paths: []string{"$.a.x", "$.b.x"},
 			exp: &Tree{
-				root: Child().
-					Append(Child(spec.Name("a")).
-						Append(Child(spec.Name("b"))),
+				root: Child().Append(
+					Child(spec.Name("a"), spec.Name("b")).Append(
+						Child(spec.Name("x")),
 					),
+				),
+			},
+		},
+		{
+			name:  "diff_parents_diff_children",
+			paths: []string{"$.a.x", "$.b.y"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("x")),
+					),
+					Child(spec.Name("b")).Append(
+						Child(spec.Name("y")),
+					),
+				),
+			},
+		},
+		{
+			name:  "same_parent_different_child",
+			paths: []string{"$.a.x", "$.a.y"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("x"), spec.Name("y")),
+					),
+				),
+			},
+		},
+		{
+			name:  "deeply_nested_same_from_diff_parent",
+			paths: []string{"$.a.b.c.d", "$.a.x.c.d"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b"), spec.Name("x")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "uneven_mixed_nested",
+			paths: []string{"$.a.b.c.d", "$.a.x.c.d.e"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")),
+							),
+						),
+						Child(spec.Name("x")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")).Append(
+									Child(spec.Name("e")),
+								),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "different_leaves",
+			paths: []string{"$.a.b.c.d", "$.a.x.c.e"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")),
+							),
+						),
+						Child(spec.Name("x")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("e")),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "split_later",
+			paths: []string{"$.a.b.c.d.f", "$.a.b.c.e.g"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")).Append(
+									Child(spec.Name("f")),
+								),
+								Child(spec.Name("e")).Append(
+									Child(spec.Name("g")),
+								),
+							),
+						),
+					),
+				),
 			},
 		},
 	} {
