@@ -33,17 +33,17 @@ func New(paths ...*jsonpath.Path) *Tree {
 				switch {
 				case cur.children[0].isBranch(segs[i+1:]):
 					// Branches equal; merge selectors and continue.
-					cur = child.mergeSelectors(seg)
+					cur = child.merge(seg.Selectors())
 					continue SEG
 				case cur.descendant == seg.IsDescendant():
 					// Different branches; same selectors?
-					if !child.containsAllSelectors(seg) {
+					if !child.contains(seg.Selectors()) {
 						// Different parents, append a new child.
 						cur = newChild(cur, seg)
-						continue SEG
+					} else {
+						// Same parents, continue to the next segment.
+						cur = child
 					}
-					// Same parents, continue to the next segment.
-					cur = child
 					continue SEG
 				}
 			}
@@ -51,6 +51,8 @@ func New(paths ...*jsonpath.Path) *Tree {
 			// No matching child, append a new one.
 			cur = newChild(cur, seg)
 		}
+
+		// Continue to the next segment.
 		cur = root
 	}
 

@@ -241,8 +241,9 @@ func (seg *Segment) isBranch(path []*spec.Segment) bool {
 	return true
 }
 
-func (seg *Segment) mergeSelectors(spec *spec.Segment) *Segment {
-	for _, sel := range spec.Selectors() {
+// Merge selectors into seg.selectors and return seg.
+func (seg *Segment) merge(selectors []spec.Selector) *Segment {
+	for _, sel := range selectors {
 		if !seg.Contains(sel) {
 			seg.selectors = append(seg.selectors, sel)
 		}
@@ -250,8 +251,9 @@ func (seg *Segment) mergeSelectors(spec *spec.Segment) *Segment {
 	return seg
 }
 
-func (seg *Segment) containsAllSelectors(spec *spec.Segment) bool {
-	for _, sel := range spec.Selectors() {
+// Returns true selectors is a subset of seg.selectors.
+func (seg *Segment) contains(selectors []spec.Selector) bool {
+	for _, sel := range selectors {
 		if !seg.Contains(sel) {
 			return false
 		}
