@@ -8,6 +8,7 @@ package jsontree
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/theory/jsonpath"
 	"github.com/theory/jsonpath/spec"
@@ -28,18 +29,28 @@ func New(paths ...*jsonpath.Path) *Tree {
 		segs := path.Query().Segments()
 	SEG:
 		for i, seg := range segs {
+			selectors := seg.Selectors()
+			if slices.ContainsFunc(selectors, func(sel spec.Selector) bool {
+				_, ok := sel.(spec.WildcardSelector)
+				return ok
+			}) {
+				// Wildcard trumps all other selectors.
+				selectors[0] = spec.Wildcard
+				selectors = selectors[0:1]
+			}
+
 			// Compare the path to each of the children.
 			for _, child := range cur.children {
-				switch {
-				case cur.children[0].isBranch(segs[i+1:]):
-					// Branches equal; merge selectors and continue.
-					cur = child.merge(seg.Selectors())
-					continue SEG
-				case cur.descendant == seg.IsDescendant():
+				if child.descendant == seg.IsDescendant() {
+					if child.isBranch(segs[i+1:]) {
+						// Branches equal; merge selectors and continue.
+						cur = child.merge(selectors)
+						continue SEG
+					}
 					// Different branches; same selectors?
-					if !child.contains(seg.Selectors()) {
+					if !child.contains(selectors) {
 						// Different parents, append a new child.
-						cur = newChild(cur, seg)
+						cur = newChild(cur, seg, selectors)
 					} else {
 						// Same parents, continue to the next segment.
 						cur = child
@@ -49,7 +60,7 @@ func New(paths ...*jsonpath.Path) *Tree {
 			}
 
 			// No matching child, append a new one.
-			cur = newChild(cur, seg)
+			cur = newChild(cur, seg, selectors)
 		}
 
 		// Continue to the next segment.
@@ -59,8 +70,8 @@ func New(paths ...*jsonpath.Path) *Tree {
 	return &Tree{root: root}
 }
 
-func newChild(cur *Segment, seg *spec.Segment) *Segment {
-	child := Child(seg.Selectors()...)
+func newChild(cur *Segment, seg *spec.Segment, selectors []spec.Selector) *Segment {
+	child := Child(selectors...)
 	child.descendant = seg.IsDescendant()
 	cur.Append(child)
 	return child

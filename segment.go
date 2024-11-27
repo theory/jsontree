@@ -219,11 +219,11 @@ func (seg *Segment) containsFilter(filter *spec.FilterSelector) bool {
 }
 
 // isBranch returns true if seg's children constitute a single branch with the
-// same selectors and children.
-func (seg *Segment) isBranch(path []*spec.Segment) bool {
+// same selectors and children as specSeg.
+func (seg *Segment) isBranch(specSeg []*spec.Segment) bool {
 	cur := seg
-	size := len(path)
-	for i, c := range path {
+	size := len(specSeg)
+	for i, c := range specSeg {
 		if i >= size || len(cur.children) != 1 {
 			return false
 		}
