@@ -251,6 +251,14 @@ func (seg *Segment) merge(selectors []spec.Selector) *Segment {
 	return seg
 }
 
+func (seg *Segment) isWildcard() bool {
+	if len(seg.selectors) != 1 {
+		return false
+	}
+	_, ok := seg.selectors[0].(spec.WildcardSelector)
+	return ok
+}
+
 // Returns true selectors is a subset of seg.selectors.
 func (seg *Segment) contains(selectors []spec.Selector) bool {
 	for _, sel := range selectors {

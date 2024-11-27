@@ -1633,6 +1633,88 @@ func TestNew(t *testing.T) {
 			paths: []string{"$[1, *]", `$["x", 4, *]`},
 			exp:   &Tree{root: Child().Append(Child(spec.Wildcard))},
 		},
+		{
+			name:  "wildcard_then_a",
+			paths: []string{"$[1, *].a", `$["x", 4, *].a`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a")),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_a_and_b",
+			paths: []string{"$[1, *].a", `$["x", 4, *].b`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a"), spec.Name("b")),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_diff_then_same",
+			paths: []string{"$.*.a.c", `$.*.b.c`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a"), spec.Name("b")).Append(
+						Child(spec.Name("c")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_diff_then_same_deep",
+			paths: []string{"$.*.a.c.d", `$.*.b.c.d`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a"), spec.Name("b")).Append(
+						Child(spec.Name("c")).Append(
+							Child(spec.Name("d")),
+						),
+					),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_divergent_paths",
+			paths: []string{"$.*.a.b", `$.*.x.y`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
+					Child(spec.Name("x")).Append(
+						Child(spec.Name("y")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_and_descendant_wildcard",
+			paths: []string{"$.*", "$..*"},
+			exp:   &Tree{root: Child().Append(Descendant(spec.Wildcard))},
+		},
+		{
+			name:  "wildcard_and_descendant_wildcard_same_child",
+			paths: []string{"$.*.a", "$..*.a"},
+			exp: &Tree{root: Child().Append(
+				Descendant(spec.Wildcard).Append(
+					Child(spec.Name("a")),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_and_descendant_wildcard_diff_child",
+			paths: []string{"$.*.a", "$..*.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a")),
+				),
+				Descendant(spec.Wildcard).Append(
+					Child(spec.Name("b")),
+				),
+			)},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

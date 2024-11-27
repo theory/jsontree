@@ -30,6 +30,7 @@ func New(paths ...*jsonpath.Path) *Tree {
 	SEG:
 		for i, seg := range segs {
 			selectors := seg.Selectors()
+			isWild := false
 			if slices.ContainsFunc(selectors, func(sel spec.Selector) bool {
 				_, ok := sel.(spec.WildcardSelector)
 				return ok
@@ -37,6 +38,7 @@ func New(paths ...*jsonpath.Path) *Tree {
 				// Wildcard trumps all other selectors.
 				selectors[0] = spec.Wildcard
 				selectors = selectors[0:1]
+				isWild = true
 			}
 
 			// Compare the path to each of the children.
@@ -55,6 +57,11 @@ func New(paths ...*jsonpath.Path) *Tree {
 						// Same parents, continue to the next segment.
 						cur = child
 					}
+					continue SEG
+				} else if isWild && !child.descendant && child.isWildcard() && child.isBranch(segs[i+1:]) {
+					// Descendant wildcard with same descendants wins.
+					child.descendant = true
+					cur = child
 					continue SEG
 				}
 			}
