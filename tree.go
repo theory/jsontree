@@ -9,6 +9,7 @@ package jsontree
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/theory/jsonpath"
 	"github.com/theory/jsonpath/spec"
@@ -92,7 +93,13 @@ func newChild(cur *Segment, seg *spec.Segment, selectors []spec.Selector) *Segme
 // String returns a string representation of seg, starting from "$" for the
 // root, and including all of its child segments in as a tree diagram.
 func (jt *Tree) String() string {
-	return "$\n" + jt.root.String()
+	buf := new(strings.Builder)
+	buf.WriteString("$\n")
+	lastIndex := len(jt.root.children) - 1
+	for i, c := range jt.root.children {
+		c.writeTo(buf, "", i == lastIndex)
+	}
+	return buf.String()
 }
 
 // Select selects jt's tree of paths from the `from` JSON value into a new

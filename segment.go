@@ -321,6 +321,7 @@ func (seg *Segment) contains(selectors []spec.Selector) bool {
 // diagram.
 func (seg *Segment) String() string {
 	buf := new(strings.Builder)
+	seg.writeSelectors(buf)
 	lastIndex := len(seg.children) - 1
 	for i, c := range seg.children {
 		c.writeTo(buf, "", i == lastIndex)
@@ -335,15 +336,8 @@ const (
 	blank = "    "
 )
 
-// writeTo writes the string representation of seg to buf.
-func (seg *Segment) writeTo(buf *strings.Builder, prefix string, last bool) {
-	buf.WriteString(prefix)
-	if last {
-		buf.WriteString(elbow)
-	} else {
-		buf.WriteString(tee)
-	}
-
+// writeSelectors writes a string representation of seg.selectors to buf.
+func (seg *Segment) writeSelectors(buf *strings.Builder) {
 	if seg.descendant {
 		buf.WriteString("..")
 	}
@@ -355,6 +349,17 @@ func (seg *Segment) writeTo(buf *strings.Builder, prefix string, last bool) {
 		buf.WriteString(sel.String())
 	}
 	buf.WriteString("]\n")
+}
+
+// writeTo writes the string representation of seg to buf.
+func (seg *Segment) writeTo(buf *strings.Builder, prefix string, last bool) {
+	buf.WriteString(prefix)
+	if last {
+		buf.WriteString(elbow)
+	} else {
+		buf.WriteString(tee)
+	}
+	seg.writeSelectors(buf)
 
 	lastIndex := len(seg.children) - 1
 	for i, sub := range seg.children {
