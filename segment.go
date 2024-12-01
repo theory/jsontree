@@ -241,7 +241,7 @@ func (seg *Segment) isBranch(specSeg []*spec.Segment) bool {
 	return true
 }
 
-// Merge selectors into seg.selectors and return seg.
+// merge merges selectors into seg.selectors and return seg.
 func (seg *Segment) merge(selectors []spec.Selector) *Segment {
 	for _, sel := range selectors {
 		if !seg.Contains(sel) {
@@ -251,6 +251,66 @@ func (seg *Segment) merge(selectors []spec.Selector) *Segment {
 	return seg
 }
 
+// dedupe de-duplicates seg's children. In other words, for any child segment
+// with all of its selectors and descendant branches also held by another
+// child segment, the former will be merged into the latter.
+func (seg *Segment) dedupe() {
+	unique := []*Segment{}
+
+	for _, child := range seg.children {
+		child.dedupe()
+		skip := false
+		for i, prev := range unique {
+			if child.descendant != prev.descendant {
+				continue
+			}
+			if prev.containsBranch(child) {
+				skip = true
+				prev.merge(child.selectors)
+			} else if child.containsBranch(prev) {
+				skip = true
+				child.merge(prev.selectors)
+				unique[i] = child
+			}
+		}
+		if !skip {
+			unique = append(unique, child)
+		}
+	}
+	seg.children = unique
+}
+
+// containsSelectors returns true if seg contains all the selectors in
+// selectors.
+func (seg *Segment) containsSelectors(selectors []spec.Selector) bool {
+	for _, s := range selectors {
+		if !seg.Contains(s) {
+			return false
+		}
+	}
+	return true
+}
+
+// containsBranch returns true if seg contains all the selectors and
+// descendants in seg2.
+func (seg *Segment) containsBranch(seg2 *Segment) bool {
+	if seg.containsSelectors(seg2.selectors) {
+		if len(seg.children) == 0 && len(seg2.children) == 0 {
+			return true
+		}
+		for _, child := range seg.children {
+			for _, child2 := range seg2.children {
+				if child.containsBranch(child2) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// isWildcard returns true if seg is a wildcard selector.
 func (seg *Segment) isWildcard() bool {
 	if len(seg.selectors) != 1 {
 		return false

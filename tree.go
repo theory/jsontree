@@ -74,6 +74,10 @@ func New(paths ...*jsonpath.Path) *Tree {
 		cur = root
 	}
 
+	if len(paths) > 1 {
+		root.dedupe()
+	}
+
 	return &Tree{root: root}
 }
 

@@ -1715,6 +1715,17 @@ func TestNew(t *testing.T) {
 				),
 			)},
 		},
+		{
+			name:  "merge_complementary",
+			paths: []string{"$.a.x.b", "$.a.y.c", "$.a.x.c", "$.a.y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("x"), spec.Name("y")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+				),
+			)},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
