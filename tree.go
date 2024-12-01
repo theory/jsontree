@@ -44,18 +44,19 @@ func New(paths ...*jsonpath.Path) *Tree {
 			// Compare the path to each of the children.
 			for _, child := range cur.children {
 				if child.descendant == seg.IsDescendant() {
-					if child.isBranch(segs[i+1:]) {
-						// Branches equal; merge selectors and continue.
+					switch {
+					case child.isBranch(segs[i+1:]):
+						// Sub-branches equal; merge selectors and continue.
 						cur = child.merge(selectors)
 						continue SEG
-					}
+
 					// Different branches; same selectors?
-					if !child.contains(selectors) {
+					case len(selectors) == len(child.selectors) && child.contains(selectors):
+						// Same selectors, continue to the next segment.
+						cur = child
+					default:
 						// Different parents, append a new child.
 						cur = newChild(cur, seg, selectors)
-					} else {
-						// Same parents, continue to the next segment.
-						cur = child
 					}
 					continue SEG
 				} else if isWild && !child.descendant && child.isWildcard() && child.isBranch(segs[i+1:]) {

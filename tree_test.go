@@ -1715,13 +1715,49 @@ func TestNew(t *testing.T) {
 				),
 			)},
 		},
+		// {
+		// 	name:  "merge_complementary",
+		// 	paths: []string{"$.a.x.b", "$.a.y.c", "$.a.x.c", "$.a.y.b"},
+		// 	exp: &Tree{root: Child().Append(
+		// 		Child(spec.Name("a")).Append(
+		// 			Child(spec.Name("x"), spec.Name("y")).Append(
+		// 				Child(spec.Name("b"), spec.Name("c")),
+		// 			),
+		// 		),
+		// 	)},
+		// },
 		{
-			name:  "merge_complementary",
-			paths: []string{"$.a.x.b", "$.a.y.c", "$.a.x.c", "$.a.y.b"},
+			name:  "do_not_merge_descendant",
+			paths: []string{"$.a.x.b", "$.a.y.c", "$.a.x.c", "$.a..y.b"},
 			exp: &Tree{root: Child().Append(
 				Child(spec.Name("a")).Append(
-					Child(spec.Name("x"), spec.Name("y")).Append(
+					Child(spec.Name("x")).Append(
 						Child(spec.Name("b"), spec.Name("c")),
+					),
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("c")),
+					),
+					Descendant(spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "do_not_merge_top_descendant",
+			paths: []string{"$.a.x.b", "$..a.y.c", "$.a.x.c", "$.a.y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("x")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+				Descendant(spec.Name("a")).Append(
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("c")),
 					),
 				),
 			)},

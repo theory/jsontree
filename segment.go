@@ -232,12 +232,11 @@ func (seg *Segment) isBranch(specSeg []*spec.Segment) bool {
 		}
 
 		cur = cur.children[0]
-		for _, sel := range c.Selectors() {
-			if !cur.Contains(sel) {
-				return false
-			}
+		if len(cur.selectors) != len(c.Selectors()) || !cur.contains(c.Selectors()) {
+			return false
 		}
 	}
+
 	return true
 }
 
@@ -255,12 +254,12 @@ func (seg *Segment) merge(selectors []spec.Selector) *Segment {
 // with all of its selectors and descendant branches also held by another
 // child segment, the former will be merged into the latter.
 func (seg *Segment) dedupe() {
-	unique := []*Segment{}
+	merged := []*Segment{}
 
 	for _, child := range seg.children {
 		child.dedupe()
 		skip := false
-		for i, prev := range unique {
+		for i, prev := range merged {
 			if child.descendant != prev.descendant {
 				continue
 			}
@@ -270,31 +269,20 @@ func (seg *Segment) dedupe() {
 			} else if child.containsBranch(prev) {
 				skip = true
 				child.merge(prev.selectors)
-				unique[i] = child
+				merged[i] = child
 			}
 		}
 		if !skip {
-			unique = append(unique, child)
+			merged = append(merged, child)
 		}
 	}
-	seg.children = unique
-}
-
-// containsSelectors returns true if seg contains all the selectors in
-// selectors.
-func (seg *Segment) containsSelectors(selectors []spec.Selector) bool {
-	for _, s := range selectors {
-		if !seg.Contains(s) {
-			return false
-		}
-	}
-	return true
+	seg.children = merged
 }
 
 // containsBranch returns true if seg contains all the selectors and
 // descendants in seg2.
 func (seg *Segment) containsBranch(seg2 *Segment) bool {
-	if seg.containsSelectors(seg2.selectors) {
+	if seg.contains(seg2.selectors) {
 		if len(seg.children) == 0 && len(seg2.children) == 0 {
 			return true
 		}
@@ -329,13 +317,13 @@ func (seg *Segment) contains(selectors []spec.Selector) bool {
 	return true
 }
 
-// String returns a string representation of seg, including all of its child
-// segments in as a tree diagram.
+// String returns a string representation of seg's child segments in as a tree
+// diagram.
 func (seg *Segment) String() string {
 	buf := new(strings.Builder)
 	lastIndex := len(seg.children) - 1
-	for i, seg := range seg.children {
-		seg.writeTo(buf, "", i == lastIndex)
+	for i, c := range seg.children {
+		c.writeTo(buf, "", i == lastIndex)
 	}
 	return buf.String()
 }
