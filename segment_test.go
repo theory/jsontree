@@ -16,7 +16,7 @@ func TestWriteNode(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		segs []*Segment
+		segs []*segment
 		str  string
 	}{
 		{
@@ -25,36 +25,36 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*Segment{Child(spec.Wildcard)},
+			segs: []*segment{child(spec.Wildcard)},
 			str:  "$\n└── [*]\n",
 		},
 		{
 			name: "one_key",
-			segs: []*Segment{Child(spec.Name("foo"))},
+			segs: []*segment{child(spec.Name("foo"))},
 			str:  "$\n└── [\"foo\"]\n",
 		},
 		{
 			name: "two_keys",
-			segs: []*Segment{Child(spec.Name("foo"), spec.Name("bar"))},
+			segs: []*segment{child(spec.Name("foo"), spec.Name("bar"))},
 			str:  "$\n└── [\"foo\",\"bar\"]\n",
 		},
 		{
 			name: "two_segments",
-			segs: []*Segment{Child(spec.Name("foo")), Child(spec.Name("bar"))},
+			segs: []*segment{child(spec.Name("foo")), child(spec.Name("bar"))},
 			str:  "$\n├── [\"foo\"]\n└── [\"bar\"]\n",
 		},
 		{
 			name: "two_keys_and_sub_keys",
-			segs: []*Segment{
-				Child(spec.Name("foo")).Append(
-					Child(spec.Name("x")),
-					Child(spec.Name("y")),
-					Descendant(spec.Name("z")),
+			segs: []*segment{
+				child(spec.Name("foo")).Append(
+					child(spec.Name("x")),
+					child(spec.Name("y")),
+					descendant(spec.Name("z")),
 				),
-				Child(spec.Name("bar")).Append(
-					Child(spec.Name("a"), spec.Index(42), spec.Slice(0, 8, 2)),
-					Child(spec.Name("b")),
-					Child(spec.Name("c")),
+				child(spec.Name("bar")).Append(
+					child(spec.Name("a"), spec.Index(42), spec.Slice(0, 8, 2)),
+					child(spec.Name("b")),
+					child(spec.Name("c")),
 				),
 			},
 			str: `$
@@ -70,27 +70,27 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "mixed_and_deep",
-			segs: []*Segment{
-				Child(spec.Name("foo")).Append(
-					Child(spec.Name("x")),
-					Child(spec.Name("y")).Append(
-						Child(spec.Wildcard).Append(
-							Child(spec.Name("a")),
-							Child(spec.Name("b")),
+			segs: []*segment{
+				child(spec.Name("foo")).Append(
+					child(spec.Name("x")),
+					child(spec.Name("y")).Append(
+						child(spec.Wildcard).Append(
+							child(spec.Name("a")),
+							child(spec.Name("b")),
 						),
 					),
 				),
-				Child(spec.Name("bar")).Append(
-					Child(spec.Name("go")),
-					Child(spec.Name("z")).Append(
-						Child(spec.Wildcard).Append(
-							Child(spec.Name("c")),
-							Child(spec.Name("d")).Append(
-								Child(spec.Slice(2, 3)),
+				child(spec.Name("bar")).Append(
+					child(spec.Name("go")),
+					child(spec.Name("z")).Append(
+						child(spec.Wildcard).Append(
+							child(spec.Name("c")),
+							child(spec.Name("d")).Append(
+								child(spec.Slice(2, 3)),
 							),
 						),
 					),
-					Child(spec.Name("hi")),
+					child(spec.Name("hi")),
 				),
 			},
 			str: `$
@@ -112,41 +112,41 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*Segment{Child(spec.Wildcard)},
+			segs: []*segment{child(spec.Wildcard)},
 			str:  "$\n└── [*]\n",
 		},
 		{
 			name: "one_index",
-			segs: []*Segment{Child(spec.Index(0))},
+			segs: []*segment{child(spec.Index(0))},
 			str:  "$\n└── [0]\n",
 		},
 		{
 			name: "two_indexes",
-			segs: []*Segment{Child(spec.Index(0), spec.Index(2))},
+			segs: []*segment{child(spec.Index(0), spec.Index(2))},
 			str:  "$\n└── [0,2]\n",
 		},
 		{
 			name: "other_two_indexes",
-			segs: []*Segment{Child(spec.Index(0)), Child(spec.Index(2))},
+			segs: []*segment{child(spec.Index(0)), child(spec.Index(2))},
 			str:  "$\n├── [0]\n└── [2]\n",
 		},
 		{
 			name: "index_index",
-			segs: []*Segment{Child(spec.Index(0)).Append(Child(spec.Index(2)))},
+			segs: []*segment{child(spec.Index(0)).Append(child(spec.Index(2)))},
 			str:  "$\n└── [0]\n    └── [2]\n",
 		},
 		{
 			name: "two_keys_and_sub_indexes",
-			segs: []*Segment{
-				Child(spec.Name("foo")).Append(
-					Child(spec.Index(0)),
-					Child(spec.Index(1)),
-					Child(spec.Index(2)),
+			segs: []*segment{
+				child(spec.Name("foo")).Append(
+					child(spec.Index(0)),
+					child(spec.Index(1)),
+					child(spec.Index(2)),
 				),
-				Child(spec.Name("bar")).Append(
-					Child(spec.Index(3)),
-					Child(spec.Index(4)),
-					Child(spec.Index(5)),
+				child(spec.Name("bar")).Append(
+					child(spec.Index(3)),
+					child(spec.Index(4)),
+					child(spec.Index(5)),
 				),
 			},
 			str: `$
@@ -162,7 +162,7 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "filter",
-			segs: []*Segment{Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
 					spec.Existence(spec.Query(true, []*spec.Segment{})),
 				}}),
@@ -171,9 +171,9 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "filter_and_key",
-			segs: []*Segment{
-				Child(spec.Name("x")),
-				Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{
+				child(spec.Name("x")),
+				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
 						spec.Existence(spec.Query(true, []*spec.Segment{})),
 					}}),
@@ -183,8 +183,8 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "filter_and_key_segment",
-			segs: []*Segment{
-				Child(
+			segs: []*segment{
+				child(
 					spec.Name("x"),
 					spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 						spec.Paren(spec.LogicalOr{spec.LogicalAnd{
@@ -197,8 +197,8 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "nested_filter",
-			segs: []*Segment{Child(spec.Name("x")).Append(
-				Child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{child(spec.Name("x")).Append(
+				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
 						spec.Existence(spec.Query(true, []*spec.Segment{})),
 					}}),
@@ -209,7 +209,7 @@ func TestWriteNode(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			n := Tree{root: &Segment{children: tc.segs}}
+			n := Tree{root: &segment{children: tc.segs}}
 			a.Equal(tc.str, n.String())
 		})
 	}
@@ -221,16 +221,16 @@ func TestIsWildcard(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		seg  *Segment
+		seg  *segment
 		exp  bool
 	}{
-		{"empty", &Segment{}, false},
-		{"name", &Segment{selectors: []spec.Selector{spec.Name("x")}}, false},
-		{"index", &Segment{selectors: []spec.Selector{spec.Index(0)}}, false},
-		{"slice", &Segment{selectors: []spec.Selector{spec.Slice()}}, false},
-		{"filter", &Segment{selectors: []spec.Selector{mkFilter("$[?@]")}}, false},
-		{"wildcard", &Segment{selectors: []spec.Selector{spec.Wildcard}}, true},
-		{"multiples", &Segment{selectors: []spec.Selector{spec.Wildcard, spec.Index(0)}}, false},
+		{"empty", &segment{}, false},
+		{"name", &segment{selectors: []spec.Selector{spec.Name("x")}}, false},
+		{"index", &segment{selectors: []spec.Selector{spec.Index(0)}}, false},
+		{"slice", &segment{selectors: []spec.Selector{spec.Slice()}}, false},
+		{"filter", &segment{selectors: []spec.Selector{mkFilter("$[?@]")}}, false},
+		{"wildcard", &segment{selectors: []spec.Selector{spec.Wildcard}}, true},
+		{"multiples", &segment{selectors: []spec.Selector{spec.Wildcard, spec.Index(0)}}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -505,7 +505,7 @@ func TestHasSelector(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.exp, selectorsContain(tc.list, tc.sel))
-			seg := &Segment{selectors: tc.list}
+			seg := &segment{selectors: tc.list}
 			a.Equal(tc.exp, seg.hasSelector(tc.sel))
 			a.Equal(tc.exact, seg.hasExactSelector(tc.sel))
 		})
@@ -520,7 +520,7 @@ func TestHasSelectors(t *testing.T) {
 
 	for _, tc := range []struct {
 		name      string
-		seg       *Segment
+		seg       *segment
 		selectors []spec.Selector
 		exp       bool
 		same      bool
@@ -528,7 +528,7 @@ func TestHasSelectors(t *testing.T) {
 	}{
 		{
 			name:      "empty",
-			seg:       Child(),
+			seg:       child(),
 			selectors: []spec.Selector{},
 			exp:       true,
 			same:      true,
@@ -536,7 +536,7 @@ func TestHasSelectors(t *testing.T) {
 		},
 		{
 			name:      "a_name",
-			seg:       Child(spec.Name("x")),
+			seg:       child(spec.Name("x")),
 			selectors: []spec.Selector{spec.Name("x")},
 			exp:       true,
 			same:      true,
@@ -544,23 +544,23 @@ func TestHasSelectors(t *testing.T) {
 		},
 		{
 			name:      "diff_name",
-			seg:       Child(spec.Name("x")),
+			seg:       child(spec.Name("x")),
 			selectors: []spec.Selector{spec.Name("y")},
 		},
 		{
 			name:      "diff_length",
-			seg:       Child(spec.Name("x")),
+			seg:       child(spec.Name("x")),
 			selectors: []spec.Selector{spec.Name("x"), spec.Name("y")},
 		},
 		{
 			name:      "diff_length_has_ok",
-			seg:       Child(spec.Name("x"), spec.Name("y")),
+			seg:       child(spec.Name("x"), spec.Name("y")),
 			selectors: []spec.Selector{spec.Name("x")},
 			exp:       true,
 		},
 		{
 			name:      "same_not_exact",
-			seg:       Child(spec.Name("x"), spec.Slice(0)),
+			seg:       child(spec.Name("x"), spec.Slice(0)),
 			selectors: []spec.Selector{spec.Name("x"), spec.Index(0)},
 			exp:       true,
 			same:      true,
@@ -1031,39 +1031,39 @@ func TestIsBranch(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		seg    *Segment
+		seg    *segment
 		branch []*spec.Segment
 		exp    bool
 	}{
 		{
 			name:   "empty",
-			seg:    &Segment{},
+			seg:    &segment{},
 			branch: []*spec.Segment{},
 			exp:    true,
 		},
 		{
 			name:   "empty_is_not_name",
-			seg:    &Segment{},
+			seg:    &segment{},
 			branch: []*spec.Segment{spec.Child(spec.Name("x"))},
 			exp:    false,
 		},
 		{
 			name:   "eq_name",
-			seg:    &Segment{children: []*Segment{Child(spec.Name("x"))}},
+			seg:    &segment{children: []*segment{child(spec.Name("x"))}},
 			branch: []*spec.Segment{spec.Child(spec.Name("x"))},
 			exp:    true,
 		},
 		{
 			name:   "ne_name",
-			seg:    &Segment{children: []*Segment{Child(spec.Name("x"))}},
+			seg:    &segment{children: []*segment{child(spec.Name("x"))}},
 			branch: []*spec.Segment{spec.Child(spec.Name("y"))},
 			exp:    false,
 		},
 		{
 			name: "size",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("x")),
-				Child(spec.Name("y")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("x")),
+				child(spec.Name("y")),
 			}},
 			branch: []*spec.Segment{
 				spec.Child(spec.Name("x")),
@@ -1073,11 +1073,11 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name: "eq_branch_mixed",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0), spec.Slice(1)).Append(
-						Child(spec.Wildcard).Append(
-							Child(mkFilter("$[?@]")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Index(0), spec.Slice(1)).Append(
+						child(spec.Wildcard).Append(
+							child(mkFilter("$[?@]")),
 						),
 					),
 				),
@@ -1092,11 +1092,11 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name: "ne_child_selectors",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0), spec.Slice(1), spec.Name("x")).Append(
-						Child(spec.Wildcard).Append(
-							Child(mkFilter("$[?@]")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Index(0), spec.Slice(1), spec.Name("x")).Append(
+						child(spec.Wildcard).Append(
+							child(mkFilter("$[?@]")),
 						),
 					),
 				),
@@ -1111,11 +1111,11 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name: "ne_spec_selectors",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0), spec.Slice(1)).Append(
-						Child(spec.Wildcard).Append(
-							Child(mkFilter("$[?@]")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Index(0), spec.Slice(1)).Append(
+						child(spec.Wildcard).Append(
+							child(mkFilter("$[?@]")),
 						),
 					),
 				),
@@ -1130,9 +1130,9 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name: "diff_child_length",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("y")).Append(
-					Child(spec.Name("z")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("y")).Append(
+					child(spec.Name("z")),
 				),
 			}},
 			branch: []*spec.Segment{
@@ -1142,8 +1142,8 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name: "diff_spec_length",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("y")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("y")),
 			}},
 			branch: []*spec.Segment{
 				spec.Child(spec.Name("y")),
@@ -1153,21 +1153,21 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name:   "ne_spec_desc",
-			seg:    &Segment{children: []*Segment{Child(spec.Name("x"))}},
+			seg:    &segment{children: []*segment{child(spec.Name("x"))}},
 			branch: []*spec.Segment{spec.Descendant(spec.Name("x"))},
 			exp:    false,
 		},
 		{
 			name:   "ne_child_desc",
-			seg:    &Segment{children: []*Segment{Descendant(spec.Name("x"))}},
+			seg:    &segment{children: []*segment{descendant(spec.Name("x"))}},
 			branch: []*spec.Segment{spec.Child(spec.Name("x"))},
 			exp:    false,
 		},
 		{
 			name: "ne_sub_spec_desc",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Name("y")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Name("y")),
 				),
 			}},
 			branch: []*spec.Segment{
@@ -1178,9 +1178,9 @@ func TestIsBranch(t *testing.T) {
 		},
 		{
 			name: "ne_sub_child_desc",
-			seg: &Segment{children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Descendant(spec.Name("y")),
+			seg: &segment{children: []*segment{
+				child(spec.Name("x")).Append(
+					descendant(spec.Name("y")),
 				),
 			}},
 			branch: []*spec.Segment{
@@ -1242,7 +1242,7 @@ func TestMergeSelectors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			seg := &Segment{selectors: tc.selectors}
+			seg := &segment{selectors: tc.selectors}
 			seg.mergeSelectors(tc.merge)
 			a.Equal(tc.exp, seg.selectors)
 		})
@@ -1255,180 +1255,180 @@ func TestMergeChildren(t *testing.T) {
 
 	for _, tc := range []struct {
 		name     string
-		children []*Segment
-		expect   []*Segment
+		children []*segment
+		expect   []*segment
 	}{
 		{
 			name:     "empty",
-			children: []*Segment{},
-			expect:   []*Segment{},
+			children: []*segment{},
+			expect:   []*segment{},
 		},
 		{
 			name:     "one_child",
-			children: []*Segment{Child(spec.Name("x"))},
-			expect:   []*Segment{Child(spec.Name("x"))},
+			children: []*segment{child(spec.Name("x"))},
+			expect:   []*segment{child(spec.Name("x"))},
 		},
 		{
 			name:     "merge_name",
-			children: []*Segment{Child(spec.Name("x")), Child(spec.Name("x"))},
-			expect:   []*Segment{Child(spec.Name("x"))},
+			children: []*segment{child(spec.Name("x")), child(spec.Name("x"))},
+			expect:   []*segment{child(spec.Name("x"))},
 		},
 		{
 			name:     "merge_selectors",
-			children: []*Segment{Child(spec.Name("x")), Child(spec.Name("y"))},
-			expect:   []*Segment{Child(spec.Name("x"), spec.Name("y"))},
+			children: []*segment{child(spec.Name("x")), child(spec.Name("y"))},
+			expect:   []*segment{child(spec.Name("x"), spec.Name("y"))},
 		},
 		{
 			name: "no_merge_diff_child",
-			children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Name("y")),
+			children: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Name("y")),
 				),
-				Child(spec.Name("a")).Append(
-					Child(spec.Name("z")),
+				child(spec.Name("a")).Append(
+					child(spec.Name("z")),
 				),
 			},
-			expect: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Name("y")),
+			expect: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Name("y")),
 				),
-				Child(spec.Name("a")).Append(
-					Child(spec.Name("z")),
+				child(spec.Name("a")).Append(
+					child(spec.Name("z")),
 				),
 			},
 		},
 		{
 			name: "merge_same_child",
-			children: []*Segment{
-				Child(spec.Name("x")).Append(
-					Child(spec.Name("y")),
+			children: []*segment{
+				child(spec.Name("x")).Append(
+					child(spec.Name("y")),
 				),
-				Child(spec.Name("a")).Append(
-					Child(spec.Name("y")),
+				child(spec.Name("a")).Append(
+					child(spec.Name("y")),
 				),
 			},
-			expect: []*Segment{
-				Child(spec.Name("x"), spec.Name("a")).Append(
-					Child(spec.Name("y")),
+			expect: []*segment{
+				child(spec.Name("x"), spec.Name("a")).Append(
+					child(spec.Name("y")),
 				),
 			},
 		},
 		{
 			name: "merge_same_nested_multi_select",
-			children: []*Segment{
-				Child(spec.Name("x"), spec.Name("y")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
+			children: []*segment{
+				child(spec.Name("x"), spec.Name("y")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
 					),
 				),
-				Child(spec.Name("z")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
+				child(spec.Name("z")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
 					),
 				),
 			},
-			expect: []*Segment{
-				Child(spec.Name("x"), spec.Name("y"), spec.Name("z")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
+			expect: []*segment{
+				child(spec.Name("x"), spec.Name("y"), spec.Name("z")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
 					),
 				),
 			},
 		},
 		{
 			name: "no_merge_diff_depth",
-			children: []*Segment{
-				Child(spec.Name("x"), spec.Name("y")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")).Append(
-							Child(spec.Name("c")),
+			children: []*segment{
+				child(spec.Name("x"), spec.Name("y")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")).Append(
+							child(spec.Name("c")),
 						),
 					),
 				),
-				Child(spec.Name("z")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
+				child(spec.Name("z")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
 					),
 				),
 			},
-			expect: []*Segment{
-				Child(spec.Name("x"), spec.Name("y")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")).Append(
-							Child(spec.Name("c")),
+			expect: []*segment{
+				child(spec.Name("x"), spec.Name("y")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")).Append(
+							child(spec.Name("c")),
 						),
 					),
 				),
-				Child(spec.Name("z")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
+				child(spec.Name("z")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
 					),
 				),
 			},
 		},
 		{
 			name: "merge_nested_selectors",
-			children: []*Segment{
-				Child(spec.Name("x"), spec.Name("y")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
-						Child(spec.Name("c")),
+			children: []*segment{
+				child(spec.Name("x"), spec.Name("y")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
+						child(spec.Name("c")),
 					),
 				),
-				Child(spec.Name("z")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b")),
-						Child(spec.Name("c")),
+				child(spec.Name("z")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b")),
+						child(spec.Name("c")),
 					),
 				),
 			},
-			expect: []*Segment{
-				Child(spec.Name("x"), spec.Name("y"), spec.Name("z")).Append(
-					Child(spec.Name("a")).Append(
-						Child(spec.Name("b"), spec.Name("c")),
+			expect: []*segment{
+				child(spec.Name("x"), spec.Name("y"), spec.Name("z")).Append(
+					child(spec.Name("a")).Append(
+						child(spec.Name("b"), spec.Name("c")),
 					),
 				),
 			},
 		},
 		{
 			name:     "merge_descendants",
-			children: []*Segment{Descendant(spec.Name("x")), Descendant(spec.Name("x"))},
-			expect:   []*Segment{Descendant(spec.Name("x"))},
+			children: []*segment{descendant(spec.Name("x")), descendant(spec.Name("x"))},
+			expect:   []*segment{descendant(spec.Name("x"))},
 		},
 		{
 			name:     "merge_descendant_child",
-			children: []*Segment{Descendant(spec.Name("x")), Child(spec.Name("x"))},
-			expect:   []*Segment{Descendant(spec.Name("x"))},
+			children: []*segment{descendant(spec.Name("x")), child(spec.Name("x"))},
+			expect:   []*segment{descendant(spec.Name("x"))},
 		},
 		{
 			name:     "merge_descendant_sub_child",
-			children: []*Segment{Descendant(spec.Name("x"), spec.Name("y")), Child(spec.Name("x"))},
-			expect:   []*Segment{Descendant(spec.Name("x"), spec.Name("y"))},
+			children: []*segment{descendant(spec.Name("x"), spec.Name("y")), child(spec.Name("x"))},
+			expect:   []*segment{descendant(spec.Name("x"), spec.Name("y"))},
 		},
 		{
 			name:     "merge_child_descendant",
-			children: []*Segment{Child(spec.Name("x")), Descendant(spec.Name("x"))},
-			expect:   []*Segment{Descendant(spec.Name("x"))},
+			children: []*segment{child(spec.Name("x")), descendant(spec.Name("x"))},
+			expect:   []*segment{descendant(spec.Name("x"))},
 		},
 		{
 			name:     "merge_child_sub_descendant",
-			children: []*Segment{Child(spec.Name("x")), Descendant(spec.Name("x"), spec.Name("y"))},
-			expect:   []*Segment{Descendant(spec.Name("x"), spec.Name("y"))},
+			children: []*segment{child(spec.Name("x")), descendant(spec.Name("x"), spec.Name("y"))},
+			expect:   []*segment{descendant(spec.Name("x"), spec.Name("y"))},
 		},
 		{
 			name:     "merge_only_common_descendant_child_selector",
-			children: []*Segment{Descendant(spec.Name("x")), Child(spec.Name("x"), spec.Name("y"))},
-			expect:   []*Segment{Descendant(spec.Name("x")), Child(spec.Name("y"))},
+			children: []*segment{descendant(spec.Name("x")), child(spec.Name("x"), spec.Name("y"))},
+			expect:   []*segment{descendant(spec.Name("x")), child(spec.Name("y"))},
 		},
 		{
 			name:     "merge_only_common_prev_descendant_selector",
-			children: []*Segment{Child(spec.Name("x"), spec.Name("y")), Descendant(spec.Name("x"))},
-			expect:   []*Segment{Child(spec.Name("y")), Descendant(spec.Name("x"))},
+			children: []*segment{child(spec.Name("x"), spec.Name("y")), descendant(spec.Name("x"))},
+			expect:   []*segment{child(spec.Name("y")), descendant(spec.Name("x"))},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			seg := &Segment{children: tc.children}
+			seg := &segment{children: tc.children}
 			seg.deduplicate()
 			a.Equal(tc.expect, seg.children)
 		})
@@ -1497,8 +1497,8 @@ func TestRemoveCommonSelectorsFrom(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			seg1 := &Segment{selectors: tc.sel1}
-			seg2 := &Segment{selectors: tc.sel2}
+			seg1 := &segment{selectors: tc.sel1}
+			seg2 := &segment{selectors: tc.sel2}
 			a.Equal(tc.res, seg1.removeCommonSelectorsFrom(seg2))
 			a.Equal(tc.exp2, seg2.selectors, "selectors 2")
 		})
@@ -1513,131 +1513,131 @@ func TestSameBranches(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		seg1 *Segment
-		seg2 *Segment
+		seg1 *segment
+		seg2 *segment
 		exp  bool
 	}{
 		{
 			name: "empties",
-			seg1: Child(),
-			seg2: Child(),
+			seg1: child(),
+			seg2: child(),
 			exp:  true,
 		},
 		{
 			name: "single_child_eq_name",
-			seg1: Child().Append(Child(spec.Name("x"))),
-			seg2: Child().Append(Child(spec.Name("x"))),
+			seg1: child().Append(child(spec.Name("x"))),
+			seg2: child().Append(child(spec.Name("x"))),
 			exp:  true,
 		},
 		{
 			name: "single_child_ne_name",
-			seg1: Child().Append(Child(spec.Name("x"))),
-			seg2: Child().Append(Child(spec.Name("y"))),
+			seg1: child().Append(child(spec.Name("x"))),
+			seg2: child().Append(child(spec.Name("y"))),
 			exp:  false,
 		},
 		{
 			name: "single_child_eq_multi_select",
-			seg1: Child().Append(Child(spec.Name("x"), spec.Index(0))),
-			seg2: Child().Append(Child(spec.Name("x"), spec.Index(0))),
+			seg1: child().Append(child(spec.Name("x"), spec.Index(0))),
+			seg2: child().Append(child(spec.Name("x"), spec.Index(0))),
 			exp:  true,
 		},
 		{
 			name: "single_child_ne_multi_select",
-			seg1: Child().Append(Child(spec.Name("x"), spec.Index(0))),
-			seg2: Child().Append(Child(spec.Name("x"), spec.Index(1))),
+			seg1: child().Append(child(spec.Name("x"), spec.Index(0))),
+			seg2: child().Append(child(spec.Name("x"), spec.Index(1))),
 			exp:  false,
 		},
 		{
 			name: "single_child_ne_index_slice",
-			seg1: Child().Append(Child(spec.Name("x"), spec.Slice(0))),
-			seg2: Child().Append(Child(spec.Name("x"), spec.Index(1))),
+			seg1: child().Append(child(spec.Name("x"), spec.Slice(0))),
+			seg2: child().Append(child(spec.Name("x"), spec.Index(1))),
 			exp:  false,
 		},
 		{
 			name: "single_child_ne_slices",
-			seg1: Child().Append(Child(spec.Name("x"), spec.Slice(0))),
-			seg2: Child().Append(Child(spec.Name("x"), spec.Slice(1))),
+			seg1: child().Append(child(spec.Name("x"), spec.Slice(0))),
+			seg2: child().Append(child(spec.Name("x"), spec.Slice(1))),
 			exp:  false,
 		},
 		{
 			name: "single_child_eq_filter",
-			seg1: Child().Append(Child(simpleExists)),
-			seg2: Child().Append(Child(simpleExists)),
+			seg1: child().Append(child(simpleExists)),
+			seg2: child().Append(child(simpleExists)),
 			exp:  true,
 		},
 		{
 			name: "single_child_ne_filter",
-			seg1: Child().Append(Child(simpleExists)),
-			seg2: Child().Append(Child(diffExists)),
+			seg1: child().Append(child(simpleExists)),
+			seg2: child().Append(child(diffExists)),
 			exp:  false,
 		},
 		{
 			name: "wildcards",
-			seg1: Child().Append(Child(spec.Wildcard)),
-			seg2: Child().Append(Child(spec.Wildcard)),
+			seg1: child().Append(child(spec.Wildcard)),
+			seg2: child().Append(child(spec.Wildcard)),
 			exp:  true,
 		},
 		{
 			name: "wildcard_with_eq_name_is_ne",
-			seg1: Child().Append(Child(spec.Wildcard, spec.Name("x"))),
-			seg2: Child().Append(Child(spec.Wildcard, spec.Name("x"))),
+			seg1: child().Append(child(spec.Wildcard, spec.Name("x"))),
+			seg2: child().Append(child(spec.Wildcard, spec.Name("x"))),
 			exp:  false,
 		},
 		{
 			name: "diff_branches_child_count",
-			seg1: Child().Append(Child(spec.Name("x"))),
-			seg2: Child().Append(Child(spec.Name("x")), Child(spec.Name("x"))),
+			seg1: child().Append(child(spec.Name("x"))),
+			seg2: child().Append(child(spec.Name("x")), child(spec.Name("x"))),
 			exp:  false,
 		},
 		{
 			name: "diff_children_child_count",
-			seg1: Child().Append(Child(spec.Name("x")), Child(spec.Name("x"))),
-			seg2: Child().Append(Child(spec.Name("x"))),
+			seg1: child().Append(child(spec.Name("x")), child(spec.Name("x"))),
+			seg2: child().Append(child(spec.Name("x"))),
 			exp:  false,
 		},
 		{
 			name: "same_children",
-			seg1: Child().Append(Child(spec.Name("x")), Child(spec.Name("x"))),
-			seg2: Child().Append(Child(spec.Name("x")), Child(spec.Name("x"))),
+			seg1: child().Append(child(spec.Name("x")), child(spec.Name("x"))),
+			seg2: child().Append(child(spec.Name("x")), child(spec.Name("x"))),
 			exp:  true,
 		},
 		{
 			name: "same_nested_children",
-			seg1: Child().Append(
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0)).Append(
-						Descendant(spec.Slice(4)),
+			seg1: child().Append(
+				child(spec.Name("x")).Append(
+					child(spec.Index(0)).Append(
+						descendant(spec.Slice(4)),
 					),
 				),
-				Child(spec.Name("y")),
+				child(spec.Name("y")),
 			),
-			seg2: Child().Append(
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0)).Append(
-						Descendant(spec.Slice(4)),
+			seg2: child().Append(
+				child(spec.Name("x")).Append(
+					child(spec.Index(0)).Append(
+						descendant(spec.Slice(4)),
 					),
 				),
-				Child(spec.Name("y")),
+				child(spec.Name("y")),
 			),
 			exp: true,
 		},
 		{
 			name: "diff_nested_children",
-			seg1: Child().Append(
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0)).Append(
-						Descendant(spec.Slice(4)),
+			seg1: child().Append(
+				child(spec.Name("x")).Append(
+					child(spec.Index(0)).Append(
+						descendant(spec.Slice(4)),
 					),
 				),
-				Child(spec.Name("y")),
+				child(spec.Name("y")),
 			),
-			seg2: Child().Append(
-				Child(spec.Name("x")).Append(
-					Child(spec.Index(0)).Append(
-						Descendant(spec.Slice(3)),
+			seg2: child().Append(
+				child(spec.Name("x")).Append(
+					child(spec.Index(0)).Append(
+						descendant(spec.Slice(3)),
 					),
 				),
-				Child(spec.Name("y")),
+				child(spec.Name("y")),
 			),
 			exp: false,
 		},
@@ -1655,53 +1655,53 @@ func TestMergeSlices(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		seg  *Segment
-		exp  *Segment
+		seg  *segment
+		exp  *segment
 	}{
 		{
 			name: "Empty",
-			seg:  Child(),
-			exp:  Child(),
+			seg:  child(),
+			exp:  child(),
 		},
 		{
 			name: "no_slices",
-			seg:  Child(spec.Name("x"), spec.Index(0)),
-			exp:  Child(spec.Name("x"), spec.Index(0)),
+			seg:  child(spec.Name("x"), spec.Index(0)),
+			exp:  child(spec.Name("x"), spec.Index(0)),
 		},
 		{
 			name: "one_slice",
-			seg:  Child(spec.Name("x"), spec.Slice(12, 18)),
-			exp:  Child(spec.Name("x"), spec.Slice(12, 18)),
+			seg:  child(spec.Name("x"), spec.Slice(12, 18)),
+			exp:  child(spec.Name("x"), spec.Slice(12, 18)),
 		},
 		{
 			name: "sub_slice",
-			seg:  Child(spec.Name("x"), spec.Slice(10), spec.Slice(12, 18)),
-			exp:  Child(spec.Name("x"), spec.Slice(10)),
+			seg:  child(spec.Name("x"), spec.Slice(10), spec.Slice(12, 18)),
+			exp:  child(spec.Name("x"), spec.Slice(10)),
 		},
 		{
 			name: "slice_sub",
-			seg:  Child(spec.Name("x"), spec.Slice(12, 18), spec.Slice(10)),
-			exp:  Child(spec.Name("x"), spec.Slice(10)),
+			seg:  child(spec.Name("x"), spec.Slice(12, 18), spec.Slice(10)),
+			exp:  child(spec.Name("x"), spec.Slice(10)),
 		},
 		{
 			name: "sub_slice",
-			seg:  Child(spec.Name("x"), spec.Slice(8), spec.Slice(10), spec.Slice(12, 18)),
-			exp:  Child(spec.Name("x"), spec.Slice(8)),
+			seg:  child(spec.Name("x"), spec.Slice(8), spec.Slice(10), spec.Slice(12, 18)),
+			exp:  child(spec.Name("x"), spec.Slice(8)),
 		},
 		{
 			name: "multi_slice_sub",
-			seg:  Child(spec.Name("x"), spec.Slice(12, 18), spec.Slice(8), spec.Slice(10)),
-			exp:  Child(spec.Name("x"), spec.Slice(8)),
+			seg:  child(spec.Name("x"), spec.Slice(12, 18), spec.Slice(8), spec.Slice(10)),
+			exp:  child(spec.Name("x"), spec.Slice(8)),
 		},
 		{
 			name: "multi_overlaps",
-			seg:  Child(spec.Name("x"), spec.Slice(12, 18), spec.Slice(8), spec.Slice(2, 5), spec.Slice(4, 5)),
-			exp:  Child(spec.Name("x"), spec.Slice(8), spec.Slice(2, 5)),
+			seg:  child(spec.Name("x"), spec.Slice(12, 18), spec.Slice(8), spec.Slice(2, 5), spec.Slice(4, 5)),
+			exp:  child(spec.Name("x"), spec.Slice(8), spec.Slice(2, 5)),
 		},
 		{
 			name: "multi_overlap_reverse",
-			seg:  Child(spec.Name("x"), spec.Slice(4, 5), spec.Slice(2, 5), spec.Slice(8), spec.Slice(12, 18)),
-			exp:  Child(spec.Name("x"), spec.Slice(2, 5), spec.Slice(8)),
+			seg:  child(spec.Name("x"), spec.Slice(4, 5), spec.Slice(2, 5), spec.Slice(8), spec.Slice(12, 18)),
+			exp:  child(spec.Name("x"), spec.Slice(2, 5), spec.Slice(8)),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

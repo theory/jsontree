@@ -7,25 +7,25 @@ import (
 	"github.com/theory/jsonpath/spec"
 )
 
-// Segment represents a single segment in a JSONTree query.
-type Segment struct {
+// segment represents a single segment in a JSONTree query.
+type segment struct {
 	selectors  []spec.Selector
-	children   []*Segment
+	children   []*segment
 	descendant bool
 }
 
-// Child creates and returns a child ([<selectors>]) Segment.
-func Child(sel ...spec.Selector) *Segment {
-	return &Segment{selectors: sel, children: []*Segment{}}
+// child creates and returns a child ([<selectors>]) Segment.
+func child(sel ...spec.Selector) *segment {
+	return &segment{selectors: sel, children: []*segment{}}
 }
 
-// Descendant creates and returns a descendant (..[<selectors>]) Segment.
-func Descendant(sel ...spec.Selector) *Segment {
-	return &Segment{selectors: sel, descendant: true, children: []*Segment{}}
+// descendant creates and returns a descendant (..[<selectors>]) Segment.
+func descendant(sel ...spec.Selector) *segment {
+	return &segment{selectors: sel, descendant: true, children: []*segment{}}
 }
 
 // Append appends child segments to seg.
-func (seg *Segment) Append(child ...*Segment) *Segment {
+func (seg *segment) Append(child ...*segment) *segment {
 	seg.children = append(seg.children, child...)
 	return seg
 }
@@ -40,12 +40,12 @@ func abs(x int) int {
 // hasSelector returns true if seg contains sel and false if it does not.
 // Accounts for [spec.Index]es in [spec.SliceSelector]s, [spec.SliceSelector]
 // overlap, and compares [*spec.FilterSelector] strings.
-func (seg *Segment) hasSelector(sel spec.Selector) bool {
+func (seg *segment) hasSelector(sel spec.Selector) bool {
 	return selectorsContain(seg.selectors, sel)
 }
 
 // hasSelectors returns true selectors is a subset of seg.selectors.
-func (seg *Segment) hasSelectors(selectors []spec.Selector) bool {
+func (seg *segment) hasSelectors(selectors []spec.Selector) bool {
 	for _, sel := range selectors {
 		if !seg.hasSelector(sel) {
 			return false
@@ -55,7 +55,7 @@ func (seg *Segment) hasSelectors(selectors []spec.Selector) bool {
 }
 
 // hasSameSelectors returns true if seg's selectors are the same as selectors.
-func (seg *Segment) hasSameSelectors(selectors []spec.Selector) bool {
+func (seg *segment) hasSameSelectors(selectors []spec.Selector) bool {
 	return len(seg.selectors) == len(selectors) && seg.hasSelectors(selectors)
 }
 
@@ -99,7 +99,7 @@ func selectorsContain(selectors []spec.Selector, sel spec.Selector) bool {
 // as sel and false if it does not. [spec.Index]es do not match
 // [spec.SliceSelector]s, [spec.SliceSelector]s must be identical, and
 // compares [*spec.FilterSelector] strings.
-func (seg *Segment) hasExactSelector(sel spec.Selector) bool {
+func (seg *segment) hasExactSelector(sel spec.Selector) bool {
 	// Search for the segment by type.
 	switch sel := sel.(type) {
 	case spec.WildcardSelector:
@@ -134,7 +134,7 @@ func (seg *Segment) hasExactSelector(sel spec.Selector) bool {
 // hasExactSelectors returns true seg contains exactly selectors.
 // [spec.Index]es do not match [spec.SliceSelector]s, [spec.SliceSelector]s
 // must be identical, and compares [*spec.FilterSelector] strings.
-func (seg *Segment) hasExactSelectors(selectors []spec.Selector) bool {
+func (seg *segment) hasExactSelectors(selectors []spec.Selector) bool {
 	if len(seg.selectors) != len(selectors) {
 		return false
 	}
@@ -293,7 +293,7 @@ func containsFilter(selectors []spec.Selector, filter *spec.FilterSelector) bool
 
 // isBranch returns true if seg's descendants constitute a single branch with
 // the same selectors as specSeg.
-func (seg *Segment) isBranch(specSeg []*spec.Segment) bool {
+func (seg *segment) isBranch(specSeg []*spec.Segment) bool {
 	cur := seg
 	size := len(specSeg)
 	for i, c := range specSeg {
@@ -314,7 +314,7 @@ func (seg *Segment) isBranch(specSeg []*spec.Segment) bool {
 }
 
 // mergeSelectors merges selectors into seg.selectors and return seg.
-func (seg *Segment) mergeSelectors(selectors []spec.Selector) *Segment {
+func (seg *segment) mergeSelectors(selectors []spec.Selector) *segment {
 	for _, sel := range selectors {
 		if !seg.hasSelector(sel) {
 			seg.selectors = append(seg.selectors, sel)
@@ -327,8 +327,8 @@ func (seg *Segment) mergeSelectors(selectors []spec.Selector) *Segment {
 // segment with all of its selectors and descendant branches also held by
 // another child segment, the former will be merged into the latter. It also
 // merges slice selectors where one slice is clearly a subset of another.
-func (seg *Segment) deduplicate() {
-	merged := []*Segment{}
+func (seg *segment) deduplicate() {
+	merged := []*segment{}
 
 	for _, child := range seg.children {
 		child.deduplicate()
@@ -368,7 +368,7 @@ func (seg *Segment) deduplicate() {
 
 // mergeSlices compares [spec.SliceSelector]s in seg.selectors, and eliminates
 // any that are clear subsets of another.
-func (seg *Segment) mergeSlices() {
+func (seg *segment) mergeSlices() {
 	merged := []spec.Selector{}
 SEL:
 	for _, sel := range seg.selectors {
@@ -396,7 +396,7 @@ SEL:
 
 // removeCommonSelectorsFrom removes selectors from seg2 that are present in
 // seg. Returns true if all selectors are removed from seg2.
-func (seg *Segment) removeCommonSelectorsFrom(seg2 *Segment) bool {
+func (seg *segment) removeCommonSelectorsFrom(seg2 *segment) bool {
 	// Prune common selectors.
 	uniqueSel := []spec.Selector{}
 	for _, sel := range seg2.selectors {
@@ -427,7 +427,7 @@ func (seg *Segment) removeCommonSelectorsFrom(seg2 *Segment) bool {
 // the exactly the same selectors and descendants. [spec.Index]es do not match
 // [spec.SliceSelector]s, [spec.SliceSelector]s must be identical, and
 // compares [*spec.FilterSelector] strings.
-func (seg *Segment) sameBranches(seg2 *Segment) bool {
+func (seg *segment) sameBranches(seg2 *segment) bool {
 	if len(seg.children) != len(seg2.children) {
 		// Let leaf nodes merge?
 		return false
@@ -446,7 +446,7 @@ C1:
 }
 
 // isWildcard returns true if seg is a wildcard selector.
-func (seg *Segment) isWildcard() bool {
+func (seg *segment) isWildcard() bool {
 	if len(seg.selectors) != 1 {
 		return false
 	}
@@ -456,7 +456,7 @@ func (seg *Segment) isWildcard() bool {
 
 // String returns a string representation of seg's child segments as a tree
 // diagram.
-func (seg *Segment) String() string {
+func (seg *segment) String() string {
 	buf := new(strings.Builder)
 	lastIndex := len(seg.children) - 1
 	for i, c := range seg.children {
@@ -473,7 +473,7 @@ const (
 )
 
 // writeTo writes the string representation of seg to buf.
-func (seg *Segment) writeTo(buf *strings.Builder, prefix string, last bool) {
+func (seg *segment) writeTo(buf *strings.Builder, prefix string, last bool) {
 	buf.WriteString(prefix)
 	if last {
 		buf.WriteString(elbow)

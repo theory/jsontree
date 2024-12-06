@@ -13,7 +13,7 @@ import (
 
 // Tree represents a tree of JSONPath query expressions.
 type Tree struct {
-	root *Segment
+	root *segment
 }
 
 // selectorsFor returns the selectors from seg, eliminating duplicates. Slices
@@ -61,7 +61,7 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 //
 //nolint:gocognit
 func New(paths ...*jsonpath.Path) *Tree {
-	root := Child()
+	root := child()
 	cur := root
 
 PATH:
@@ -95,7 +95,7 @@ PATH:
 							continue PATH
 						case i == len(segs)-1:
 							// Discard existing children and go to next path.
-							child.children = []*Segment{}
+							child.children = []*segment{}
 							continue PATH
 						default:
 							// Branches continue in sub-segments.
@@ -125,8 +125,8 @@ PATH:
 	return &Tree{root: root}
 }
 
-func newChild(cur *Segment, seg *spec.Segment, selectors []spec.Selector) *Segment {
-	child := Child(selectors...)
+func newChild(cur *segment, seg *spec.Segment, selectors []spec.Selector) *segment {
+	child := child(selectors...)
 	child.descendant = seg.IsDescendant()
 	cur.Append(child)
 	return child
@@ -167,7 +167,7 @@ func (tree *Tree) Select(from any) any {
 
 // selectObjectSegment uses the selectors in seg to select paths from src into
 // dst and recurses into its children.
-func (tree *Tree) selectObjectSegment(seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) selectObjectSegment(seg *segment, root any, cur, dst map[string]any) {
 	tree.selectObject(seg, root, cur, dst)
 	for _, seg := range seg.children {
 		tree.selectObject(seg, root, cur, dst)
@@ -177,7 +177,7 @@ func (tree *Tree) selectObjectSegment(seg *Segment, root any, cur, dst map[strin
 // selectObject uses the selectors in seg to select paths from src to dst. If
 // seg is a descendant Segment, it recursively selects from seg into all of
 // src's values.
-func (tree *Tree) selectObject(seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) selectObject(seg *segment, root any, cur, dst map[string]any) {
 	for _, sel := range seg.selectors {
 		switch sel := sel.(type) {
 		case spec.Name:
@@ -201,7 +201,7 @@ func (tree *Tree) selectObject(seg *Segment, root any, cur, dst map[string]any) 
 
 // descendObject selects the paths from seg from each value from src into
 // dst.
-func (tree *Tree) descendObject(seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) descendObject(seg *segment, root any, cur, dst map[string]any) {
 	for k, v := range cur {
 		switch v := v.(type) {
 		case map[string]any:
@@ -220,7 +220,7 @@ func (tree *Tree) descendObject(seg *Segment, root any, cur, dst map[string]any)
 // stores it in dst. If the value is a JSON object (map[string]any) or array
 // ([]any), it dispatches selection for that value so that seg's children can
 // select from the value.
-func (tree *Tree) processKey(key string, seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) processKey(key string, seg *segment, root any, cur, dst map[string]any) {
 	// Do we have a value?
 	val, ok := cur[key]
 	if !ok {
@@ -252,7 +252,7 @@ func (tree *Tree) processKey(key string, seg *Segment, root any, cur, dst map[st
 // submit to selectObject. If dst is nil it creates a new map, calls
 // selectObject, and returns the result if it contains any values and nil when
 // it does not. Otherwise it converts dst to a map and calls selectObject.
-func (tree *Tree) dispatchObject(seg *Segment, root any, cur map[string]any, dst any) map[string]any {
+func (tree *Tree) dispatchObject(seg *segment, root any, cur map[string]any, dst any) map[string]any {
 	var sub map[string]any
 	if dst != nil {
 		var ok bool
@@ -288,7 +288,7 @@ func (tree *Tree) dispatchObject(seg *Segment, root any, cur map[string]any, dst
 // so:
 //
 //	dst := make([]any, 0, cap(src))
-func (tree *Tree) processIndex(idx int, seg *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) processIndex(idx int, seg *segment, root any, cur, dst []any) []any {
 	prevLen := len(dst)
 	// Grow the destination to the index, if necessary.
 	if idx >= prevLen {
@@ -329,7 +329,7 @@ func (tree *Tree) processIndex(idx int, seg *Segment, root any, cur, dst []any) 
 // submit to selectArray. If dst is nil it creates a new slice and passes it
 // to selectArray. Otherwise it converts dst to a slice and passes it to
 // selectArray.
-func (tree *Tree) dispatchArray(seg *Segment, root any, cur []any, dstVal any) []any {
+func (tree *Tree) dispatchArray(seg *segment, root any, cur []any, dstVal any) []any {
 	var sub []any
 	if dstVal == nil {
 		// Set up the destination slice.
@@ -350,7 +350,7 @@ func (tree *Tree) dispatchArray(seg *Segment, root any, cur []any, dstVal any) [
 // selectArraySegment uses the selectors in seg to select paths from src into
 // dst and recurses into its children. Returns the updated dst or nil if it's
 // empty.
-func (tree *Tree) selectArraySegment(seg *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) selectArraySegment(seg *segment, root any, cur, dst []any) []any {
 	dst = tree.selectArray(seg, root, cur, dst)
 	for _, seg := range seg.children {
 		dst = tree.selectArray(seg, root, cur, dst)
@@ -365,7 +365,7 @@ func (tree *Tree) selectArraySegment(seg *Segment, root any, cur, dst []any) []a
 // selectArray uses the selectors in seg to select paths from src to dst. If
 // seg is a descendant Segment, it recursively selects from seg into all of
 // src's values.
-func (tree *Tree) selectArray(n *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) selectArray(n *segment, root any, cur, dst []any) []any {
 	for _, sel := range n.selectors {
 		switch sel := sel.(type) {
 		case spec.Index:
@@ -402,7 +402,7 @@ func (tree *Tree) selectArray(n *Segment, root any, cur, dst []any) []any {
 // so:
 //
 //	dst := make([]any, 0, cap(src))
-func (tree *Tree) processSlice(seg *Segment, sel spec.SliceSelector, root any, cur, dst []any) []any {
+func (tree *Tree) processSlice(seg *segment, sel spec.SliceSelector, root any, cur, dst []any) []any {
 	// When step == 0, no elements are selected.
 	switch {
 	case sel.Step() > 0:
@@ -421,7 +421,7 @@ func (tree *Tree) processSlice(seg *Segment, sel spec.SliceSelector, root any, c
 
 // descendArray selects the paths from seg from each value from src into
 // dst.
-func (tree *Tree) descendArray(seg *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) descendArray(seg *segment, root any, cur, dst []any) []any {
 	dstLen := len(dst)
 	for i, v := range cur {
 		// Grab the destination array if it exists.
