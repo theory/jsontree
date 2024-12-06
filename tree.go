@@ -1,8 +1,5 @@
 /*
-Package jsontree selects [RFC 9535 JSONPath]s from one entity into a new
-entity.
-
-	[RFC 9535 JSONPath]: https://www.rfc-editor.org/rfc/rfc9535.html
+Package jsontree selects RFC 9535 JSONPaths from one JSON value into a new value.
 */
 package jsontree
 
@@ -137,28 +134,28 @@ func newChild(cur *Segment, seg *spec.Segment, selectors []spec.Selector) *Segme
 
 // String returns a string representation of seg, starting from "$" for the
 // root, and including all of its child segments in as a tree diagram.
-func (jt *Tree) String() string {
-	return "$\n" + jt.root.String()
+func (tree *Tree) String() string {
+	return "$\n" + tree.root.String()
 }
 
-// Select selects jt's tree of paths from the `from` JSON value into a new
-// value. For a root-only JSONTree that contains no children, from will simply
-// be returned. All other JSONTree queries will select from the from value if
-// it's an array ([]any) or object (map[string]any). Returns nil for any other
-// values.
-func (jt *Tree) Select(from any) any {
-	if len(jt.root.children) == 0 {
+// Select selects tree's paths from the from JSON value into a new value. For
+// a root-only JSONTree that contains no children, from will simply be
+// returned. All other JSONTree queries will select from the from value if
+// it's an array ([]any) or object (map[string]any), and return nil for any
+// other values.
+func (tree *Tree) Select(from any) any {
+	if len(tree.root.children) == 0 {
 		return from
 	}
 
 	switch entity := from.(type) {
 	case map[string]any:
 		ret := map[string]any{}
-		jt.selectObjectSegment(jt.root, entity, entity, ret)
+		tree.selectObjectSegment(tree.root, entity, entity, ret)
 		return ret
 	case []any:
 		ret := make([]any, 0, cap(entity))
-		if sel := jt.selectArraySegment(jt.root, entity, entity, ret); sel != nil {
+		if sel := tree.selectArraySegment(tree.root, entity, entity, ret); sel != nil {
 			return sel
 		}
 		return ret
@@ -170,49 +167,49 @@ func (jt *Tree) Select(from any) any {
 
 // selectObjectSegment uses the selectors in seg to select paths from src into
 // dst and recurses into its children.
-func (jt *Tree) selectObjectSegment(seg *Segment, root any, cur, dst map[string]any) {
-	jt.selectObject(seg, root, cur, dst)
+func (tree *Tree) selectObjectSegment(seg *Segment, root any, cur, dst map[string]any) {
+	tree.selectObject(seg, root, cur, dst)
 	for _, seg := range seg.children {
-		jt.selectObject(seg, root, cur, dst)
+		tree.selectObject(seg, root, cur, dst)
 	}
 }
 
 // selectObject uses the selectors in seg to select paths from src to dst. If
 // seg is a descendant Segment, it recursively selects from seg into all of
 // src's values.
-func (jt *Tree) selectObject(seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) selectObject(seg *Segment, root any, cur, dst map[string]any) {
 	for _, sel := range seg.selectors {
 		switch sel := sel.(type) {
 		case spec.Name:
-			jt.processKey(string(sel), seg, root, cur, dst)
+			tree.processKey(string(sel), seg, root, cur, dst)
 		case spec.WildcardSelector:
 			for k := range cur {
-				jt.processKey(k, seg, root, cur, dst)
+				tree.processKey(k, seg, root, cur, dst)
 			}
 		case *spec.FilterSelector:
 			for k, v := range cur {
 				if sel.Eval(v, root) {
-					jt.processKey(k, seg, root, cur, dst)
+					tree.processKey(k, seg, root, cur, dst)
 				}
 			}
 		}
 	}
 	if seg.descendant {
-		jt.descendObject(seg, root, cur, dst)
+		tree.descendObject(seg, root, cur, dst)
 	}
 }
 
 // descendObject selects the paths from seg from each value from src into
 // dst.
-func (jt *Tree) descendObject(seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) descendObject(seg *Segment, root any, cur, dst map[string]any) {
 	for k, v := range cur {
 		switch v := v.(type) {
 		case map[string]any:
-			if sub := jt.dispatchObject(seg, root, v, dst[k]); sub != nil {
+			if sub := tree.dispatchObject(seg, root, v, dst[k]); sub != nil {
 				dst[k] = sub
 			}
 		case []any:
-			if sub := jt.dispatchArray(seg, root, v, dst[k]); sub != nil {
+			if sub := tree.dispatchArray(seg, root, v, dst[k]); sub != nil {
 				dst[k] = sub
 			}
 		}
@@ -223,7 +220,7 @@ func (jt *Tree) descendObject(seg *Segment, root any, cur, dst map[string]any) {
 // stores it in dst. If the value is a JSON object (map[string]any) or array
 // ([]any), it dispatches selection for that value so that seg's children can
 // select from the value.
-func (jt *Tree) processKey(key string, seg *Segment, root any, cur, dst map[string]any) {
+func (tree *Tree) processKey(key string, seg *Segment, root any, cur, dst map[string]any) {
 	// Do we have a value?
 	val, ok := cur[key]
 	if !ok {
@@ -239,12 +236,12 @@ func (jt *Tree) processKey(key string, seg *Segment, root any, cur, dst map[stri
 	// Allow the child segments to select from an object or array.
 	switch val := val.(type) {
 	case map[string]any:
-		sub := jt.dispatchObject(seg, root, val, dst[key])
+		sub := tree.dispatchObject(seg, root, val, dst[key])
 		if sub != nil {
 			dst[key] = sub
 		}
 	case []any:
-		sub := jt.dispatchArray(seg, root, val, dst[key])
+		sub := tree.dispatchArray(seg, root, val, dst[key])
 		if sub != nil {
 			dst[key] = sub
 		}
@@ -255,7 +252,7 @@ func (jt *Tree) processKey(key string, seg *Segment, root any, cur, dst map[stri
 // submit to selectObject. If dst is nil it creates a new map, calls
 // selectObject, and returns the result if it contains any values and nil when
 // it does not. Otherwise it converts dst to a map and calls selectObject.
-func (jt *Tree) dispatchObject(seg *Segment, root any, cur map[string]any, dst any) map[string]any {
+func (tree *Tree) dispatchObject(seg *Segment, root any, cur map[string]any, dst any) map[string]any {
 	var sub map[string]any
 	if dst != nil {
 		var ok bool
@@ -263,13 +260,13 @@ func (jt *Tree) dispatchObject(seg *Segment, root any, cur map[string]any, dst a
 			// This should not happen.
 			panic(fmt.Sprintf("jsontree: expected destination object but got %T", dst))
 		}
-		jt.selectObjectSegment(seg, root, cur, sub)
+		tree.selectObjectSegment(seg, root, cur, sub)
 		return sub
 	}
 
 	// Set up the destination object.
 	sub = map[string]any{}
-	jt.selectObjectSegment(seg, root, cur, sub)
+	tree.selectObjectSegment(seg, root, cur, sub)
 
 	// Don't bother to keep the object if there's nothing in it.
 	if len(sub) > 0 {
@@ -291,7 +288,7 @@ func (jt *Tree) dispatchObject(seg *Segment, root any, cur map[string]any, dst a
 // so:
 //
 //	dst := make([]any, 0, cap(src))
-func (jt *Tree) processIndex(idx int, seg *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) processIndex(idx int, seg *Segment, root any, cur, dst []any) []any {
 	prevLen := len(dst)
 	// Grow the destination to the index, if necessary.
 	if idx >= prevLen {
@@ -310,12 +307,12 @@ func (jt *Tree) processIndex(idx int, seg *Segment, root any, cur, dst []any) []
 	// updated dst.
 	switch val := cur[idx].(type) {
 	case map[string]any:
-		if sub := jt.dispatchObject(seg, root, val, dst[idx]); sub != nil {
+		if sub := tree.dispatchObject(seg, root, val, dst[idx]); sub != nil {
 			dst[idx] = sub
 			return dst
 		}
 	case []any:
-		if sub := jt.dispatchArray(seg, root, val, dst[idx]); sub != nil {
+		if sub := tree.dispatchArray(seg, root, val, dst[idx]); sub != nil {
 			dst[idx] = sub
 			return dst
 		}
@@ -332,7 +329,7 @@ func (jt *Tree) processIndex(idx int, seg *Segment, root any, cur, dst []any) []
 // submit to selectArray. If dst is nil it creates a new slice and passes it
 // to selectArray. Otherwise it converts dst to a slice and passes it to
 // selectArray.
-func (jt *Tree) dispatchArray(seg *Segment, root any, cur []any, dstVal any) []any {
+func (tree *Tree) dispatchArray(seg *Segment, root any, cur []any, dstVal any) []any {
 	var sub []any
 	if dstVal == nil {
 		// Set up the destination slice.
@@ -347,16 +344,16 @@ func (jt *Tree) dispatchArray(seg *Segment, root any, cur []any, dstVal any) []a
 	}
 
 	// Select seg from src into sub and return the updated slice.
-	return jt.selectArraySegment(seg, root, cur, sub)
+	return tree.selectArraySegment(seg, root, cur, sub)
 }
 
 // selectArraySegment uses the selectors in seg to select paths from src into
 // dst and recurses into its children. Returns the updated dst or nil if it's
 // empty.
-func (jt *Tree) selectArraySegment(seg *Segment, root any, cur, dst []any) []any {
-	dst = jt.selectArray(seg, root, cur, dst)
+func (tree *Tree) selectArraySegment(seg *Segment, root any, cur, dst []any) []any {
+	dst = tree.selectArray(seg, root, cur, dst)
 	for _, seg := range seg.children {
-		dst = jt.selectArray(seg, root, cur, dst)
+		dst = tree.selectArray(seg, root, cur, dst)
 	}
 
 	if len(dst) == 0 {
@@ -368,31 +365,31 @@ func (jt *Tree) selectArraySegment(seg *Segment, root any, cur, dst []any) []any
 // selectArray uses the selectors in seg to select paths from src to dst. If
 // seg is a descendant Segment, it recursively selects from seg into all of
 // src's values.
-func (jt *Tree) selectArray(n *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) selectArray(n *Segment, root any, cur, dst []any) []any {
 	for _, sel := range n.selectors {
 		switch sel := sel.(type) {
 		case spec.Index:
 			idx := int(sel)
 			if idx < len(cur) {
-				dst = jt.processIndex(idx, n, root, cur, dst)
+				dst = tree.processIndex(idx, n, root, cur, dst)
 			}
 		case spec.WildcardSelector:
 			for i := range cur {
-				dst = jt.processIndex(i, n, root, cur, dst)
+				dst = tree.processIndex(i, n, root, cur, dst)
 			}
 		case spec.SliceSelector:
-			dst = jt.processSlice(n, sel, root, cur, dst)
+			dst = tree.processSlice(n, sel, root, cur, dst)
 		case *spec.FilterSelector:
 			for i, v := range cur {
 				if sel.Eval(v, root) {
-					dst = jt.processIndex(i, n, root, cur, dst)
+					dst = tree.processIndex(i, n, root, cur, dst)
 				}
 			}
 		}
 	}
 
 	if n.descendant {
-		dst = jt.descendArray(n, root, cur, dst)
+		dst = tree.descendArray(n, root, cur, dst)
 	}
 
 	return dst
@@ -405,18 +402,18 @@ func (jt *Tree) selectArray(n *Segment, root any, cur, dst []any) []any {
 // so:
 //
 //	dst := make([]any, 0, cap(src))
-func (jt *Tree) processSlice(seg *Segment, sel spec.SliceSelector, root any, cur, dst []any) []any {
+func (tree *Tree) processSlice(seg *Segment, sel spec.SliceSelector, root any, cur, dst []any) []any {
 	// When step == 0, no elements are selected.
 	switch {
 	case sel.Step() > 0:
 		lower, upper := sel.Bounds(len(cur))
 		for i := lower; i < upper; i += sel.Step() {
-			dst = jt.processIndex(i, seg, root, cur, dst)
+			dst = tree.processIndex(i, seg, root, cur, dst)
 		}
 	case sel.Step() < 0:
 		lower, upper := sel.Bounds(len(cur))
 		for i := upper; lower < i; i += sel.Step() {
-			dst = jt.processIndex(i, seg, root, cur, dst)
+			dst = tree.processIndex(i, seg, root, cur, dst)
 		}
 	}
 	return dst
@@ -424,7 +421,7 @@ func (jt *Tree) processSlice(seg *Segment, sel spec.SliceSelector, root any, cur
 
 // descendArray selects the paths from seg from each value from src into
 // dst.
-func (jt *Tree) descendArray(seg *Segment, root any, cur, dst []any) []any {
+func (tree *Tree) descendArray(seg *Segment, root any, cur, dst []any) []any {
 	dstLen := len(dst)
 	for i, v := range cur {
 		// Grab the destination array if it exists.
@@ -434,7 +431,7 @@ func (jt *Tree) descendArray(seg *Segment, root any, cur, dst []any) []any {
 		}
 		switch v := v.(type) {
 		case map[string]any:
-			if sub := jt.dispatchObject(seg, root, v, subDest); sub != nil {
+			if sub := tree.dispatchObject(seg, root, v, subDest); sub != nil {
 				// We have data. Resize the array and save it.
 				if i >= dstLen {
 					dst = dst[:i+1]
@@ -442,7 +439,7 @@ func (jt *Tree) descendArray(seg *Segment, root any, cur, dst []any) []any {
 				dst[i] = sub
 			}
 		case []any:
-			if sub := jt.dispatchArray(seg, root, v, subDest); sub != nil {
+			if sub := tree.dispatchArray(seg, root, v, subDest); sub != nil {
 				// We have data. Resize the array and save it.
 				if i >= dstLen {
 					dst = dst[:i+1]

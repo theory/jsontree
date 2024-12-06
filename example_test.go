@@ -10,8 +10,8 @@ import (
 )
 
 // Given a user profile as a JSON object, execute a JSONTree query that
-// creates a copy of the object that contains only all fields named "last" and
-// all "primary" contacts of any type.
+// creates a copy of the object that contains only fields named "last" and all
+// "primary" contacts of any type.
 func Example() {
 	// User profile fetched from storage. Contains more fields than we need.
 	src := []byte(`{
@@ -53,7 +53,7 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	// Create a JSONTree query to fetch
+	// Create a JSONTree query for multiple JSONPaths.
 	tree := jsontree.New(
 		// Select any field under "profile" named "last".
 		jsonpath.MustParse("$.profile..last"),
@@ -93,4 +93,23 @@ func Example() {
 	//     }
 	//   }
 	// }
+}
+
+func ExampleTree_String() {
+	tree := jsontree.New(
+		jsonpath.MustParse("$.profile..last"),
+		jsonpath.MustParse("$.profile..contacts.primary"),
+		jsonpath.MustParse(`$.preferences[0, 2]["type", "value"]`),
+		jsonpath.MustParse(`$.preferences[1]["type", "value"]`),
+	)
+	fmt.Printf("%v\n", tree)
+	// Output:
+	// $
+	// ├── ["profile"]
+	// │   ├── ..["last"]
+	// │   └── ..["contacts"]
+	// │       └── ["primary"]
+	// └── ["preferences"]
+	//     └── [0,2,1]
+	//         └── ["type","value"]
 }

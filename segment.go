@@ -24,7 +24,7 @@ func Descendant(sel ...spec.Selector) *Segment {
 	return &Segment{selectors: sel, descendant: true, children: []*Segment{}}
 }
 
-// Append appends child as child segments of seg.
+// Append appends child segments to seg.
 func (seg *Segment) Append(child ...*Segment) *Segment {
 	seg.children = append(seg.children, child...)
 	return seg
@@ -454,7 +454,7 @@ func (seg *Segment) isWildcard() bool {
 	return ok
 }
 
-// String returns a string representation of seg's child segments in as a tree
+// String returns a string representation of seg's child segments as a tree
 // diagram.
 func (seg *Segment) String() string {
 	buf := new(strings.Builder)
