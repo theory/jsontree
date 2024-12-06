@@ -37,13 +37,35 @@ func abs(x int) int {
 	return x
 }
 
-// Contains returns true if seg contains sel and false if it does not.
+// hasSelector returns true if seg contains sel and false if it does not.
 // Accounts for [spec.Index]es in [spec.SliceSelector]s, [spec.SliceSelector]
 // overlap, and compares [*spec.FilterSelector] strings.
-func (seg *Segment) Contains(sel spec.Selector) bool {
-	if len(seg.selectors) == 1 {
+func (seg *Segment) hasSelector(sel spec.Selector) bool {
+	return selectorsContain(seg.selectors, sel)
+}
+
+// hasSelectors returns true selectors is a subset of seg.selectors.
+func (seg *Segment) hasSelectors(selectors []spec.Selector) bool {
+	for _, sel := range selectors {
+		if !seg.hasSelector(sel) {
+			return false
+		}
+	}
+	return true
+}
+
+// hasSameSelectors returns true if seg's selectors are the same as selectors.
+func (seg *Segment) hasSameSelectors(selectors []spec.Selector) bool {
+	return len(seg.selectors) == len(selectors) && seg.hasSelectors(selectors)
+}
+
+// selectorsContain returns true if selectors contains sel and false if it
+// does not. Accounts for [spec.Index]es in [spec.SliceSelector]s,
+// [spec.SliceSelector] overlap, and compares [*spec.FilterSelector] strings.
+func selectorsContain(selectors []spec.Selector, sel spec.Selector) bool {
+	if len(selectors) == 1 {
 		// A wildcard selector should always be the only selector.
-		if _, ok := seg.selectors[0].(spec.WildcardSelector); ok {
+		if _, ok := selectors[0].(spec.WildcardSelector); ok {
 			return true
 		}
 	}
@@ -53,19 +75,19 @@ func (seg *Segment) Contains(sel spec.Selector) bool {
 	case spec.WildcardSelector:
 		return false
 	case spec.Name:
-		if seg.containsName(sel) {
+		if containsName(selectors, sel) {
 			return true
 		}
 	case spec.Index:
-		if seg.containsIndex(sel) {
+		if containsIndex(selectors, sel) {
 			return true
 		}
 	case spec.SliceSelector:
-		if seg.containsSlice(sel) {
+		if containsSlice(selectors, sel) {
 			return true
 		}
 	case *spec.FilterSelector:
-		if seg.containsFilter(sel) {
+		if containsFilter(selectors, sel) {
 			return true
 		}
 	}
@@ -73,9 +95,60 @@ func (seg *Segment) Contains(sel spec.Selector) bool {
 	return false
 }
 
-// containsName returns true if seg contains name.
-func (seg *Segment) containsName(name spec.Name) bool {
-	for _, s := range seg.selectors {
+// hasExactSelector returns true if seg's selectors contains the same selector
+// as sel and false if it does not. [spec.Index]es do not match
+// [spec.SliceSelector]s, [spec.SliceSelector]s must be identical, and
+// compares [*spec.FilterSelector] strings.
+func (seg *Segment) hasExactSelector(sel spec.Selector) bool {
+	// Search for the segment by type.
+	switch sel := sel.(type) {
+	case spec.WildcardSelector:
+		return seg.isWildcard()
+
+	case spec.Name:
+		if containsName(seg.selectors, sel) {
+			return true
+		}
+	case spec.Index:
+		for _, s := range seg.selectors {
+			if s, ok := s.(spec.Index); ok && s == sel {
+				return true
+			}
+		}
+	case spec.SliceSelector:
+		for _, s := range seg.selectors {
+			if s, ok := s.(spec.SliceSelector); ok && s == sel {
+				return true
+			}
+		}
+
+	case *spec.FilterSelector:
+		if containsFilter(seg.selectors, sel) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasExactSelectors returns true seg contains exactly selectors.
+// [spec.Index]es do not match [spec.SliceSelector]s, [spec.SliceSelector]s
+// must be identical, and compares [*spec.FilterSelector] strings.
+func (seg *Segment) hasExactSelectors(selectors []spec.Selector) bool {
+	if len(seg.selectors) != len(selectors) {
+		return false
+	}
+	for _, sel := range selectors {
+		if !seg.hasExactSelector(sel) {
+			return false
+		}
+	}
+	return true
+}
+
+// containsName returns true if selectors contains name.
+func containsName(selectors []spec.Selector, name spec.Name) bool {
+	for _, s := range selectors {
 		if s, ok := s.(spec.Name); ok {
 			if s == name {
 				return true
@@ -85,12 +158,12 @@ func (seg *Segment) containsName(name spec.Name) bool {
 	return false
 }
 
-// containsIndex returns true if seg contains idx. It evaluates both
+// containsIndex returns true if selectors contains idx. It evaluates both
 // [spec.Index] values and [spec.SliceSelector]s with positive start and end
 // values and positive steps or a -1 step where end < start. Supports both
 // positive and negative idx values within those constraints.
-func (seg *Segment) containsIndex(idx spec.Index) bool {
-	for _, s := range seg.selectors {
+func containsIndex(selectors []spec.Selector, idx spec.Index) bool {
+	for _, s := range selectors {
 		switch s := s.(type) {
 		case spec.Index:
 			if s == idx {
@@ -131,14 +204,14 @@ func (seg *Segment) containsIndex(idx spec.Index) bool {
 	return false
 }
 
-// containsSlice returns true if seg contains slice. To qualify, slice's start
-// and end must come between the start and end of a slice in seg, and the step
-// of that slice must be a multiple of slice's step. Or, slice must select a
-// single element that is the same as a [spec.Index] in seg.
+// containsSlice returns true if selectors contains slice. To qualify, slice's
+// start and end must come between the start and end of a slice in seg, and
+// the step of that slice must be a multiple of slice's step. Or, slice must
+// select a single element that is the same as a [spec.Index] in seg.
 //
 // In theory, all the spec.Index values in seg could account for all the
 // indexes in the slice. But this is good enough for now.
-func (seg *Segment) containsSlice(slice spec.SliceSelector) bool {
+func containsSlice(selectors []spec.Selector, slice spec.SliceSelector) bool {
 	if slice.Step() == 0 ||
 		slice.Start() == slice.End() ||
 		(slice.Step() > 0 && slice.Start() > slice.End()) ||
@@ -147,7 +220,7 @@ func (seg *Segment) containsSlice(slice spec.SliceSelector) bool {
 		return true
 	}
 
-	for _, s := range seg.selectors {
+	for _, s := range selectors {
 		switch s := s.(type) {
 		case spec.SliceSelector:
 			if ok := sliceInSlice(slice, s); ok {
@@ -200,14 +273,14 @@ func sliceInSlice(sub, sup spec.SliceSelector) bool {
 	return false
 }
 
-// containsFilter returns true if seg contains filter. Currently relies on
+// containsFilter returns true if selectors contains filter. Currently relies on
 // string comparison, but could be improved by implementing [sort.Interface]
 // for [spec.LogicalOr] and [spec.LogicalAnd], as well as operand and operator
 // normalization in [spec.ComparisonExpr].
 //
 // [sort.Interface]: https://pkg.go.dev/sort#Interface
-func (seg *Segment) containsFilter(filter *spec.FilterSelector) bool {
-	for _, s := range seg.selectors {
+func containsFilter(selectors []spec.Selector, filter *spec.FilterSelector) bool {
+	for _, s := range selectors {
 		if s, ok := s.(*spec.FilterSelector); ok {
 			if s.String() == filter.String() {
 				return true
@@ -218,13 +291,176 @@ func (seg *Segment) containsFilter(filter *spec.FilterSelector) bool {
 	return false
 }
 
-// String returns a string representation of seg, including all of its child
-// segments in as a tree diagram.
+// isBranch returns true if seg's descendants constitute a single branch with
+// the same selectors as specSeg.
+func (seg *Segment) isBranch(specSeg []*spec.Segment) bool {
+	cur := seg
+	size := len(specSeg)
+	for i, c := range specSeg {
+		if i >= size || len(cur.children) != 1 {
+			return false
+		}
+
+		cur = cur.children[0]
+		if cur.descendant != c.IsDescendant() {
+			return false
+		}
+
+		if len(cur.selectors) != len(c.Selectors()) || !cur.hasSelectors(c.Selectors()) {
+			return false
+		}
+	}
+	return len(cur.children) == 0
+}
+
+// mergeSelectors merges selectors into seg.selectors and return seg.
+func (seg *Segment) mergeSelectors(selectors []spec.Selector) *Segment {
+	for _, sel := range selectors {
+		if !seg.hasSelector(sel) {
+			seg.selectors = append(seg.selectors, sel)
+		}
+	}
+	return seg
+}
+
+// deduplicate recursively deduplicates seg. In other words, for any child
+// segment with all of its selectors and descendant branches also held by
+// another child segment, the former will be merged into the latter. It also
+// merges slice selectors where one slice is clearly a subset of another.
+func (seg *Segment) deduplicate() {
+	merged := []*Segment{}
+
+	for _, child := range seg.children {
+		child.deduplicate()
+		skip := false
+		for i, prev := range merged {
+			if !prev.sameBranches(child) {
+				continue
+			}
+			// Can probably merge.
+			switch {
+			case prev.descendant == child.descendant:
+				// Merge.
+				prev.mergeSelectors(child.selectors)
+				skip = true
+			case child.descendant:
+				// Remove common selectors from prev.
+				if skip = child.removeCommonSelectorsFrom(prev); skip {
+					// Replace prev with child
+					merged[i] = child
+				}
+			case prev.descendant:
+				// Remove common selectors from child
+				skip = prev.removeCommonSelectorsFrom(child)
+			}
+		}
+		if !skip {
+			merged = append(merged, child)
+		}
+	}
+
+	if len(merged) != len(seg.children) {
+		// XXX Shrink merged cap to its len?
+		seg.children = merged
+	}
+	seg.mergeSlices()
+}
+
+// mergeSlices compares [spec.SliceSelector]s in seg.selectors, and eliminates
+// any that are clear subsets of another.
+func (seg *Segment) mergeSlices() {
+	merged := []spec.Selector{}
+SEL:
+	for _, sel := range seg.selectors {
+		if sel, ok := sel.(spec.SliceSelector); ok {
+			for i, ss := range merged {
+				if ss, ok := ss.(spec.SliceSelector); ok {
+					if sliceInSlice(sel, ss) {
+						continue SEL
+					}
+					if sliceInSlice(ss, sel) {
+						merged[i] = sel
+						continue SEL
+					}
+				}
+			}
+		}
+		merged = append(merged, sel)
+	}
+
+	if len(merged) != len(seg.selectors) {
+		// XXX Shrink merged cap to its len?
+		seg.selectors = merged
+	}
+}
+
+// removeCommonSelectorsFrom removes selectors from seg2 that are present in
+// seg. Returns true if all selectors are removed from seg2.
+func (seg *Segment) removeCommonSelectorsFrom(seg2 *Segment) bool {
+	// Prune common selectors.
+	uniqueSel := []spec.Selector{}
+	for _, sel := range seg2.selectors {
+		if !seg.hasSelector(sel) {
+			uniqueSel = append(uniqueSel, sel)
+		}
+	}
+
+	switch len(uniqueSel) {
+	case len(seg2.selectors):
+		// None in common.
+		return false
+	case 0:
+		// All merged
+		// XXX Shrink merged cap to its len?
+		seg2.selectors = uniqueSel
+		return true
+	default:
+		// Save only retained selectors.
+		// XXX Shrink merged cap to its len?
+		seg2.selectors = uniqueSel
+		return false
+	}
+}
+
+// sameBranches returns true if seg has the same branches as seg2. It
+// recursively compares seg's children to seg2's children to ensure they have
+// the exactly the same selectors and descendants. [spec.Index]es do not match
+// [spec.SliceSelector]s, [spec.SliceSelector]s must be identical, and
+// compares [*spec.FilterSelector] strings.
+func (seg *Segment) sameBranches(seg2 *Segment) bool {
+	if len(seg.children) != len(seg2.children) {
+		// Let leaf nodes merge?
+		return false
+	}
+
+C1:
+	for _, c1 := range seg.children {
+		for _, c2 := range seg2.children {
+			if c1.hasExactSelectors(c2.selectors) && c1.sameBranches(c2) {
+				continue C1
+			}
+		}
+		return false
+	}
+	return true
+}
+
+// isWildcard returns true if seg is a wildcard selector.
+func (seg *Segment) isWildcard() bool {
+	if len(seg.selectors) != 1 {
+		return false
+	}
+	_, ok := seg.selectors[0].(spec.WildcardSelector)
+	return ok
+}
+
+// String returns a string representation of seg's child segments in as a tree
+// diagram.
 func (seg *Segment) String() string {
 	buf := new(strings.Builder)
 	lastIndex := len(seg.children) - 1
-	for i, seg := range seg.children {
-		seg.writeTo(buf, "", i == lastIndex)
+	for i, c := range seg.children {
+		c.writeTo(buf, "", i == lastIndex)
 	}
 	return buf.String()
 }

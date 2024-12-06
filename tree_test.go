@@ -37,7 +37,7 @@ func TestRunRoot(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := &JSONTree{root: &Segment{}}
+			sel := &Tree{root: &Segment{}}
 			a.Equal(tc.val, sel.Select(tc.val))
 			switch tc.val.(type) {
 			case map[string]any, []any:
@@ -307,8 +307,8 @@ func TestObjectSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.obj))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.obj))
 		})
 	}
 
@@ -338,9 +338,9 @@ func TestObjectSelection(t *testing.T) {
 			t.Parallel()
 			// In general a value in dst should only be a map because we sanitize
 			// the segments in advance, but this check ensures it at runtime.
-			sel := &JSONTree{}
+			tree := &Tree{}
 			a.PanicsWithValue(tc.err, func() {
-				sel.selectObjectSegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
+				tree.selectObjectSegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
 	}
@@ -660,8 +660,8 @@ func TestArraySelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.ary))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.ary))
 		})
 	}
 
@@ -692,9 +692,9 @@ func TestArraySelection(t *testing.T) {
 			// In general a value in dst should only be a slice because we
 			// sanitize the segments in advance, but this check ensures it at
 			// runtime.
-			sel := &JSONTree{}
+			tree := &Tree{}
 			a.PanicsWithValue(tc.err, func() {
-				sel.selectArraySegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
+				tree.selectArraySegment(&Segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
 	}
@@ -1048,8 +1048,8 @@ func TestSliceSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.ary))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.ary))
 		})
 	}
 }
@@ -1069,7 +1069,7 @@ func TestDescendants(t *testing.T) {
 		exp   any
 	}{
 		{
-			name:  "descendent_name",
+			name:  "descendant_name",
 			segs:  []*Segment{Descendant(spec.Name("j"))},
 			input: json,
 			exp: map[string]any{
@@ -1078,7 +1078,7 @@ func TestDescendants(t *testing.T) {
 			},
 		},
 		{
-			name:  "un_descendent_name",
+			name:  "un_descendant_name",
 			segs:  []*Segment{Descendant(spec.Name("o"))},
 			input: json,
 			exp:   map[string]any{"o": map[string]any{"j": 1, "k": 2}},
@@ -1186,8 +1186,8 @@ func TestDescendants(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sel := New(tc.segs...)
-			a.Equal(tc.exp, sel.Select(tc.input))
+			tree := Tree{Child().Append(tc.segs...)}
+			a.Equal(tc.exp, tree.Select(tc.input))
 		})
 	}
 }
@@ -1278,8 +1278,837 @@ func TestFilterSelection(t *testing.T) {
 					segs[i-1].Append(segs[i])
 				}
 			}
-			tree := New(segs[0])
+			tree := Tree{Child().Append(segs[0])}
 			a.Equal(tc.output, tree.Select(tc.input))
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name  string
+		paths []string
+		exp   *Tree
+	}{
+		{
+			name:  "root_only",
+			paths: []string{"$"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "two_root_only",
+			paths: []string{"$", "$"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "one_name",
+			paths: []string{"$.a"},
+			exp:   &Tree{root: Child().Append(Child(spec.Name("a")))},
+		},
+		{
+			name:  "two_names",
+			paths: []string{"$.a.b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			},
+		},
+		{
+			name:  "two_names_index",
+			paths: []string{"$.a.b[1]"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Index(1)),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "two_names_descendant",
+			paths: []string{"$.a..b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Descendant(spec.Name("b")),
+					),
+				),
+			},
+		},
+		{
+			name:  "dup_two_names_descendant",
+			paths: []string{"$.a..b", "$.a..b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Descendant(spec.Name("b")),
+					),
+				),
+			},
+		},
+		{
+			name:  "merge_descendant",
+			paths: []string{"$.a..b", "$.a.b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Descendant(spec.Name("b")),
+					),
+				),
+			},
+		},
+		{
+			name:  "merge_descendant_children",
+			paths: []string{"$.a..b.c", "$.a.b.c"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Descendant(spec.Name("b")).Append(
+							Child(spec.Name("c")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "two_single_key_paths",
+			paths: []string{"$.a", "$.b"},
+			exp: &Tree{
+				root: Child().Append(Child(spec.Name("a"), spec.Name("b"))),
+			},
+		},
+		{
+			name:  "two_identical_paths",
+			paths: []string{"$.a.b", "$.a.b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			},
+		},
+		{
+			name:  "diff_parents_same_child",
+			paths: []string{"$.a.x", "$.b.x"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a"), spec.Name("b")).Append(
+						Child(spec.Name("x")),
+					),
+				),
+			},
+		},
+		{
+			name:  "diff_parents_diff_children",
+			paths: []string{"$.a.x", "$.b.y"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("x")),
+					),
+					Child(spec.Name("b")).Append(
+						Child(spec.Name("y")),
+					),
+				),
+			},
+		},
+		{
+			name:  "same_parent_different_child",
+			paths: []string{"$.a.x", "$.a.y"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("x"), spec.Name("y")),
+					),
+				),
+			},
+		},
+		{
+			name:  "deeply_nested_same_from_diff_parent",
+			paths: []string{"$.a.b.c.d", "$.a.x.c.d"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b"), spec.Name("x")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "uneven_mixed_nested",
+			paths: []string{"$.a.b.c.d", "$.a.x.c.d.e"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")),
+							),
+						),
+						Child(spec.Name("x")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")).Append(
+									Child(spec.Name("e")),
+								),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "different_leaves",
+			paths: []string{"$.a.b.c.d", "$.a.x.c.e"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")),
+							),
+						),
+						Child(spec.Name("x")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("e")),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "split_later",
+			paths: []string{"$.a.b.c.d.f", "$.a.b.c.e.g"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d")).Append(
+									Child(spec.Name("f")),
+								),
+								Child(spec.Name("e")).Append(
+									Child(spec.Name("g")),
+								),
+							),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "four_identical_paths",
+			paths: []string{"$.a.b", "$.a.b", "$.a.b", "$.a.b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			},
+		},
+		{
+			name:  "same_diff_same",
+			paths: []string{"$.a.x.b", "$.a.y.b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("x"), spec.Name("y")).Append(
+							Child(spec.Name("b")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "same_diff_diff",
+			paths: []string{"$.a.x.b", "$.a.y.c"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("x")).Append(
+							Child(spec.Name("b")),
+						),
+						Child(spec.Name("y")).Append(
+							Child(spec.Name("c")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "dupe_two_names_index",
+			paths: []string{"$.a.b[1]", "$.a.b[1]"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Index(1)),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "diff_indexes",
+			paths: []string{"$[0]", "$[1]"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Index(0), spec.Index(1)),
+				),
+			},
+		},
+		{
+			name:  "diff_sub_indexes",
+			paths: []string{"$[0][0]", "$[0][1]"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Index(0)).Append(
+						Child(spec.Index(0), spec.Index(1)),
+					),
+				),
+			},
+		},
+		{
+			name:  "diff_index_name_key",
+			paths: []string{"$[0][0].a", "$[0][1].b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Index(0)).Append(
+						Child(spec.Index(0)).Append(
+							Child(spec.Name("a")),
+						),
+						Child(spec.Index(1)).Append(
+							Child(spec.Name("b")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "same_same_idx_diff_key",
+			paths: []string{"$[0][0].a", "$[0][0].b"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Index(0)).Append(
+						Child(spec.Index(0)).Append(
+							Child(spec.Name("a"), spec.Name("b")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "same_diff_idx_diff_child",
+			paths: []string{"$[0][0].a", "$[0][1].a"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Index(0)).Append(
+						Child(spec.Index(0), spec.Index(1)).Append(
+							Child(spec.Name("a")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "triple_same_diff_idx_diff_child",
+			paths: []string{"$[0][0].a", "$[0][1].a", "$[0][3].a"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Index(0)).Append(
+						Child(spec.Index(0), spec.Index(1), spec.Index(3)).Append(
+							Child(spec.Name("a")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "wildcard",
+			paths: []string{"$.*", "$.*"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "wildcard_seg",
+			paths: []string{"$.*", "$[*]"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "wildcard_trumps_all",
+			paths: []string{`$["x", 4, *]`, "$[*, 1]"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "wildcard_trumps_all_inverse",
+			paths: []string{"$[1, *]", `$["x", 4, *]`},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "drop_trailing_wildcard",
+			paths: []string{"$.a.*", "$.a.*"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")),
+			)},
+		},
+		{
+			name:  "drop_trailing_wildcard_diff_key",
+			paths: []string{"$.a.*", "$.b.*"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a"), spec.Name("b")),
+			)},
+		},
+		{
+			name:  "wildcard_then_a",
+			paths: []string{"$[1, *].a", `$["x", 4, *].a`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a")),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_a_and_b",
+			paths: []string{"$[1, *].a", `$["x", 4, *].b`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a"), spec.Name("b")),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_diff_then_same",
+			paths: []string{"$.*.a.c", `$.*.b.c`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a"), spec.Name("b")).Append(
+						Child(spec.Name("c")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_diff_then_same_deep",
+			paths: []string{"$.*.a.c.d", `$.*.b.c.d`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a"), spec.Name("b")).Append(
+						Child(spec.Name("c")).Append(
+							Child(spec.Name("d")),
+						),
+					),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_then_divergent_paths",
+			paths: []string{"$.*.a.b", `$.*.x.y`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")),
+					),
+					Child(spec.Name("x")).Append(
+						Child(spec.Name("y")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_and_descendant_wildcard",
+			paths: []string{"$.*", "$..*"},
+			exp:   &Tree{root: Child()},
+		},
+		{
+			name:  "wildcard_and_descendant_wildcard_same_child",
+			paths: []string{"$.*.a", "$..*.a"},
+			exp: &Tree{root: Child().Append(
+				Descendant(spec.Wildcard).Append(
+					Child(spec.Name("a")),
+				),
+			)},
+		},
+		{
+			name:  "wildcard_and_descendant_wildcard_diff_child",
+			paths: []string{"$.*.a", "$..*.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Wildcard).Append(
+					Child(spec.Name("a")),
+				),
+				Descendant(spec.Wildcard).Append(
+					Child(spec.Name("b")),
+				),
+			)},
+		},
+		{
+			name:  "merge_complementary",
+			paths: []string{"$.a.x.b", "$.a.y.c", "$.a.x.c", "$.a.y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("x"), spec.Name("y")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "merge_complementary_desc",
+			paths: []string{"$.a..x.b", "$.a..y.c", "$.a..x.c", "$.a..y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Descendant(spec.Name("x"), spec.Name("y")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "merge_complementary_rev_desc",
+			paths: []string{"$.a.x.b", "$.a.y.b", "$.a..x.b", "$.a..y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Descendant(spec.Name("x"), spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "do_not_merge_complementary_mixed_desc",
+			paths: []string{"$.a..x.b", "$.a..y.c", "$.a..x.c", "$.a.y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Descendant(spec.Name("x")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+					Descendant(spec.Name("y")).Append(
+						Child(spec.Name("c")),
+					),
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "do_not_merge_descendant",
+			paths: []string{"$.a.x.b", "$.a.y.c", "$.a.x.c", "$.a..y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("x")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("c")),
+					),
+					Descendant(spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "do_not_merge_top_descendant",
+			paths: []string{"$..a.y.c", "$.a.y.b"},
+			exp: &Tree{root: Child().Append(
+				Descendant(spec.Name("a")).Append(
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("c")),
+					),
+				),
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "do_not_merge_top_descendant_multi",
+			paths: []string{"$.a.x.b", "$..a.y.c", "$.a.x.c", "$.a.y.b"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("x")).Append(
+						Child(spec.Name("b"), spec.Name("c")),
+					),
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("b")),
+					),
+				),
+				Descendant(spec.Name("a")).Append(
+					Child(spec.Name("y")).Append(
+						Child(spec.Name("c")),
+					),
+				),
+			)},
+		},
+		{
+			name:  "merge_same_branch",
+			paths: []string{"$.a.b.c", "$.d", "$.a..x.c"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("b")).Append(
+						Child(spec.Name("c")),
+					),
+					Descendant(spec.Name("x")).Append(
+						Child(spec.Name("c")),
+					),
+				),
+				Child(spec.Name("d")),
+			)},
+		},
+		{
+			name:  "skip_common_branch",
+			paths: []string{"$.a.b.c", "$.d", "$.a.x.c"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("a")).Append(
+					Child(spec.Name("b"), spec.Name("x")).Append(
+						Child(spec.Name("c")),
+					),
+				),
+				Child(spec.Name("d")),
+			)},
+		},
+		{
+			name:  "merge_index_selectors",
+			paths: []string{"$[1,2,1,2,3]"},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Index(1), spec.Index(2), spec.Index(3)),
+			)},
+		},
+		{
+			name:  "merge_name_selectors",
+			paths: []string{`$["x", "y", "x", "r", "y"]`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Name("x"), spec.Name("y"), spec.Name("r")),
+			)},
+		},
+		{
+			name:  "merge_slice_selector",
+			paths: []string{`$["x", 1, "x", 1, 2, 2:]`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Slice(2), spec.Name("x"), spec.Index(1)),
+			)},
+		},
+		{
+			name:  "merge_mixed_multi_path",
+			paths: []string{`$["x", 1, "x", 1, 2, 2:]`, `$["x", 2, "y"]`},
+			exp: &Tree{root: Child().Append(
+				Child(spec.Slice(2), spec.Name("x"), spec.Index(1), spec.Name("y")),
+			)},
+		},
+		{
+			name:  "merge_leaf_node",
+			paths: []string{"$.a.b.c", "$.a.b.c.d.e"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "merge_leaf_wildcard_leaf_node",
+			paths: []string{"$.a.b.c.*", "$.a.b.c.d.e"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "merge_reverse_leaf_node",
+			paths: []string{"$.a.b.c.d.e", "$.a.b.c"},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")),
+						),
+					),
+				),
+			},
+		},
+		{
+			name:  "merge_deep_common_selectors",
+			paths: []string{"$.a.b.c.d", `$.a.b.c["e", "f"]`},
+			exp: &Tree{
+				root: Child().Append(
+					Child(spec.Name("a")).Append(
+						Child(spec.Name("b")).Append(
+							Child(spec.Name("c")).Append(
+								Child(spec.Name("d"), spec.Name("e"), spec.Name("f")),
+							),
+						),
+					),
+				),
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			paths := make([]*jsonpath.Path, len(tc.paths))
+			for i, p := range tc.paths {
+				paths[i] = jsonpath.MustParse(p)
+			}
+			tree := New(paths...)
+			a.Equal(tc.exp.String(), tree.String())
+		})
+	}
+}
+
+func TestSelectorsFor(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name   string
+		seg    *spec.Segment
+		expect []spec.Selector
+		wild   bool
+	}{
+		{
+			name:   "empty",
+			seg:    spec.Child(),
+			expect: []spec.Selector{},
+			wild:   false,
+		},
+		{
+			name:   "one_name",
+			seg:    spec.Child(spec.Name("x")),
+			expect: []spec.Selector{spec.Name("x")},
+			wild:   false,
+		},
+		{
+			name:   "wildcard",
+			seg:    spec.Child(spec.Wildcard),
+			expect: []spec.Selector{spec.Wildcard},
+			wild:   true,
+		},
+		{
+			name:   "mix_wildcard",
+			seg:    spec.Child(spec.Name("x"), spec.Wildcard),
+			expect: []spec.Selector{spec.Wildcard},
+			wild:   true,
+		},
+		{
+			name:   "wildcard_mix",
+			seg:    spec.Child(spec.Wildcard, spec.Name("x"), spec.Index(1)),
+			expect: []spec.Selector{spec.Wildcard},
+			wild:   true,
+		},
+		{
+			name: "mix_selectors_frst",
+			seg: spec.Child(
+				spec.Name("x"),
+				spec.Index(1),
+				spec.Slice(2, 6),
+				mkFilter("$[?@]"),
+			),
+			expect: []spec.Selector{
+				spec.Slice(2, 6),
+				spec.Name("x"),
+				spec.Index(1),
+				mkFilter("$[?@]"),
+			},
+			wild: false,
+		},
+		{
+			name: "slices_before_indexes",
+			seg: spec.Child(
+				spec.Slice(8),
+				spec.Index(1),
+				spec.Index(2),
+				spec.Slice(5, 6),
+				spec.Index(4),
+				spec.Slice(6),
+			),
+			expect: []spec.Selector{
+				spec.Slice(8),
+				spec.Slice(5, 6),
+				spec.Slice(6),
+				spec.Index(1),
+				spec.Index(2),
+				spec.Index(4),
+			},
+			wild: false,
+		},
+		{
+			name: "merge_indexes_into_slices",
+			seg: spec.Child(
+				spec.Slice(2, 3),
+				spec.Index(1),
+				spec.Index(2),
+				spec.Slice(6, 8),
+				spec.Index(7),
+				spec.Index(6),
+			),
+			expect: []spec.Selector{
+				spec.Slice(2, 3),
+				spec.Slice(6, 8),
+				spec.Index(1),
+			},
+			wild: false,
+		},
+		{
+			name: "wildcard_trump_all",
+			seg: spec.Child(
+				spec.Slice(2, 3),
+				spec.Index(1),
+				spec.Index(2),
+				spec.Slice(6, 8),
+				spec.Index(7),
+				spec.Index(6),
+				spec.Wildcard,
+			),
+			expect: []spec.Selector{spec.Wildcard},
+			wild:   true,
+		},
+		{
+			name: "merge_dupes_slice_first",
+			seg: spec.Child(
+				spec.Name("x"),
+				spec.Index(1),
+				spec.Name("x"),
+				spec.Index(2),
+				spec.Index(3),
+				spec.Slice(4),
+			),
+			expect: []spec.Selector{
+				spec.Slice(4),
+				spec.Name("x"),
+				spec.Index(1),
+				spec.Index(2),
+				spec.Index(3),
+			},
+			wild: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			selectors, wild := selectorsFor(tc.seg)
+			a.Equal(tc.expect, selectors)
+			a.Equal(tc.wild, wild)
 		})
 	}
 }
