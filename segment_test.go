@@ -10,42 +10,58 @@ import (
 	"github.com/theory/jsonpath/spec"
 )
 
-func TestWriteNode(t *testing.T) {
+func TestWriteSeg(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
-		segs []*segment
+		seg  *segment
 		str  string
 	}{
 		{
-			name: "root_only",
-			str:  "$\n",
+			name: "empty_child",
+			seg:  child(),
+			str:  "[]\n",
+		},
+		{
+			name: "empty_descendant",
+			seg:  descendant(),
+			str:  "..[]\n",
 		},
 		{
 			name: "wildcard",
-			segs: []*segment{child(spec.Wildcard)},
-			str:  "$\n└── [*]\n",
+			seg:  child(spec.Wildcard),
+			str:  "[*]\n",
 		},
 		{
 			name: "one_key",
-			segs: []*segment{child(spec.Name("foo"))},
-			str:  "$\n└── [\"foo\"]\n",
+			seg:  child(spec.Name("foo")),
+			str:  "[\"foo\"]\n",
 		},
 		{
 			name: "two_keys",
-			segs: []*segment{child(spec.Name("foo"), spec.Name("bar"))},
-			str:  "$\n└── [\"foo\",\"bar\"]\n",
+			seg:  child(spec.Name("foo"), spec.Name("bar")),
+			str:  "[\"foo\",\"bar\"]\n",
 		},
 		{
-			name: "two_segments",
-			segs: []*segment{child(spec.Name("foo")), child(spec.Name("bar"))},
-			str:  "$\n├── [\"foo\"]\n└── [\"bar\"]\n",
+			name: "parent_child",
+			seg: child(spec.Name("foo")).Append(
+				child(spec.Name("bar")),
+			),
+			str: "[\"foo\"]\n└── [\"bar\"]\n",
 		},
 		{
-			name: "two_keys_and_sub_keys",
-			segs: []*segment{
+			name: "parent_two_child",
+			seg: child(spec.Name("foo")).Append(
+				child(spec.Name("bar")),
+				child(spec.Name("baz")),
+			),
+			str: "[\"foo\"]\n├── [\"bar\"]\n└── [\"baz\"]\n",
+		},
+		{
+			name: "two_children_and_sub_keys",
+			seg: child(spec.Name("hi")).Append(
 				child(spec.Name("foo")).Append(
 					child(spec.Name("x")),
 					child(spec.Name("y")),
@@ -56,8 +72,8 @@ func TestWriteNode(t *testing.T) {
 					child(spec.Name("b")),
 					child(spec.Name("c")),
 				),
-			},
-			str: `$
+			),
+			str: `["hi"]
 ├── ["foo"]
 │   ├── ["x"]
 │   ├── ["y"]
@@ -70,7 +86,7 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "mixed_and_deep",
-			segs: []*segment{
+			seg: child(spec.Name("hi")).Append(
 				child(spec.Name("foo")).Append(
 					child(spec.Name("x")),
 					child(spec.Name("y")).Append(
@@ -92,8 +108,8 @@ func TestWriteNode(t *testing.T) {
 					),
 					child(spec.Name("hi")),
 				),
-			},
-			str: `$
+			),
+			str: `["hi"]
 ├── ["foo"]
 │   ├── ["x"]
 │   └── ["y"]
@@ -112,32 +128,34 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*segment{child(spec.Wildcard)},
-			str:  "$\n└── [*]\n",
+			seg:  child(spec.Wildcard),
+			str:  "[*]\n",
 		},
 		{
 			name: "one_index",
-			segs: []*segment{child(spec.Index(0))},
-			str:  "$\n└── [0]\n",
+			seg:  child(spec.Index(0)),
+			str:  "[0]\n",
 		},
 		{
 			name: "two_indexes",
-			segs: []*segment{child(spec.Index(0), spec.Index(2))},
-			str:  "$\n└── [0,2]\n",
-		},
-		{
-			name: "other_two_indexes",
-			segs: []*segment{child(spec.Index(0)), child(spec.Index(2))},
-			str:  "$\n├── [0]\n└── [2]\n",
+			seg:  child(spec.Index(0), spec.Index(2)),
+			str:  "[0,2]\n",
 		},
 		{
 			name: "index_index",
-			segs: []*segment{child(spec.Index(0)).Append(child(spec.Index(2)))},
-			str:  "$\n└── [0]\n    └── [2]\n",
+			seg:  child(spec.Index(0)).Append(child(spec.Index(2))),
+			str:  "[0]\n└── [2]\n",
+		},
+		{
+			name: "two_nested_indexes",
+			seg: child(spec.Index(1)).Append(
+				child(spec.Index(0)), child(spec.Index(2)),
+			),
+			str: "[1]\n├── [0]\n└── [2]\n",
 		},
 		{
 			name: "two_keys_and_sub_indexes",
-			segs: []*segment{
+			seg: child(spec.Name("hi")).Append(
 				child(spec.Name("foo")).Append(
 					child(spec.Index(0)),
 					child(spec.Index(1)),
@@ -148,8 +166,8 @@ func TestWriteNode(t *testing.T) {
 					child(spec.Index(4)),
 					child(spec.Index(5)),
 				),
-			},
-			str: `$
+			),
+			str: `["hi"]
 ├── ["foo"]
 │   ├── [0]
 │   ├── [1]
@@ -162,55 +180,52 @@ func TestWriteNode(t *testing.T) {
 		},
 		{
 			name: "filter",
-			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			seg: child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
 					spec.Existence(spec.Query(true, []*spec.Segment{})),
 				}}),
-			}}))},
-			str: "$\n└── [?($)]\n",
+			}})),
+			str: "[?($)]\n",
 		},
 		{
 			name: "filter_and_key",
-			segs: []*segment{
+			seg: child(spec.Name("hi")).Append(
 				child(spec.Name("x")),
 				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
 						spec.Existence(spec.Query(true, []*spec.Segment{})),
 					}}),
 				}})),
-			},
-			str: "$\n├── [\"x\"]\n└── [?($)]\n",
+			),
+			str: "[\"hi\"]\n├── [\"x\"]\n└── [?($)]\n",
 		},
 		{
 			name: "filter_and_key_segment",
-			segs: []*segment{
-				child(
-					spec.Name("x"),
-					spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-						spec.Paren(spec.LogicalOr{spec.LogicalAnd{
-							spec.Existence(spec.Query(true, []*spec.Segment{})),
-						}}),
+			seg: child(
+				spec.Name("x"),
+				spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+						spec.Existence(spec.Query(true, []*spec.Segment{})),
 					}}),
-				),
-			},
-			str: "$\n└── [\"x\",?($)]\n",
+				}}),
+			),
+			str: "[\"x\",?($)]\n",
 		},
 		{
 			name: "nested_filter",
-			segs: []*segment{child(spec.Name("x")).Append(
+			seg: child(spec.Name("x")).Append(
 				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
 						spec.Existence(spec.Query(true, []*spec.Segment{})),
 					}}),
 				}})),
-			)},
-			str: "$\n└── [\"x\"]\n    └── [?($)]\n",
+			),
+			str: "[\"x\"]\n└── [?($)]\n",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			n := Tree{root: &segment{children: tc.segs}}
-			a.Equal(tc.str, n.String())
+			a.Equal(tc.str, tc.seg.String(), tc.name)
 		})
 	}
 }

@@ -1363,6 +1363,211 @@ func TestFilterSelection(t *testing.T) {
 	}
 }
 
+func TestTreeString(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name string
+		segs []*segment
+		str  string
+	}{
+		{
+			name: "root_only",
+			str:  "$\n",
+		},
+		{
+			name: "wildcard",
+			segs: []*segment{child(spec.Wildcard)},
+			str:  "$\n└── [*]\n",
+		},
+		{
+			name: "one_key",
+			segs: []*segment{child(spec.Name("foo"))},
+			str:  "$\n└── [\"foo\"]\n",
+		},
+		{
+			name: "two_keys",
+			segs: []*segment{child(spec.Name("foo"), spec.Name("bar"))},
+			str:  "$\n└── [\"foo\",\"bar\"]\n",
+		},
+		{
+			name: "two_segments",
+			segs: []*segment{child(spec.Name("foo")), child(spec.Name("bar"))},
+			str:  "$\n├── [\"foo\"]\n└── [\"bar\"]\n",
+		},
+		{
+			name: "two_keys_and_sub_keys",
+			segs: []*segment{
+				child(spec.Name("foo")).Append(
+					child(spec.Name("x")),
+					child(spec.Name("y")),
+					descendant(spec.Name("z")),
+				),
+				child(spec.Name("bar")).Append(
+					child(spec.Name("a"), spec.Index(42), spec.Slice(0, 8, 2)),
+					child(spec.Name("b")),
+					child(spec.Name("c")),
+				),
+			},
+			str: `$
+├── ["foo"]
+│   ├── ["x"]
+│   ├── ["y"]
+│   └── ..["z"]
+└── ["bar"]
+    ├── ["a",42,:8:2]
+    ├── ["b"]
+    └── ["c"]
+`,
+		},
+		{
+			name: "mixed_and_deep",
+			segs: []*segment{
+				child(spec.Name("foo")).Append(
+					child(spec.Name("x")),
+					child(spec.Name("y")).Append(
+						child(spec.Wildcard).Append(
+							child(spec.Name("a")),
+							child(spec.Name("b")),
+						),
+					),
+				),
+				child(spec.Name("bar")).Append(
+					child(spec.Name("go")),
+					child(spec.Name("z")).Append(
+						child(spec.Wildcard).Append(
+							child(spec.Name("c")),
+							child(spec.Name("d")).Append(
+								child(spec.Slice(2, 3)),
+							),
+						),
+					),
+					child(spec.Name("hi")),
+				),
+			},
+			str: `$
+├── ["foo"]
+│   ├── ["x"]
+│   └── ["y"]
+│       └── [*]
+│           ├── ["a"]
+│           └── ["b"]
+└── ["bar"]
+    ├── ["go"]
+    ├── ["z"]
+    │   └── [*]
+    │       ├── ["c"]
+    │       └── ["d"]
+    │           └── [2:3]
+    └── ["hi"]
+`,
+		},
+		{
+			name: "wildcard",
+			segs: []*segment{child(spec.Wildcard)},
+			str:  "$\n└── [*]\n",
+		},
+		{
+			name: "one_index",
+			segs: []*segment{child(spec.Index(0))},
+			str:  "$\n└── [0]\n",
+		},
+		{
+			name: "two_indexes",
+			segs: []*segment{child(spec.Index(0), spec.Index(2))},
+			str:  "$\n└── [0,2]\n",
+		},
+		{
+			name: "other_two_indexes",
+			segs: []*segment{child(spec.Index(0)), child(spec.Index(2))},
+			str:  "$\n├── [0]\n└── [2]\n",
+		},
+		{
+			name: "index_index",
+			segs: []*segment{child(spec.Index(0)).Append(child(spec.Index(2)))},
+			str:  "$\n└── [0]\n    └── [2]\n",
+		},
+		{
+			name: "two_keys_and_sub_indexes",
+			segs: []*segment{
+				child(spec.Name("foo")).Append(
+					child(spec.Index(0)),
+					child(spec.Index(1)),
+					child(spec.Index(2)),
+				),
+				child(spec.Name("bar")).Append(
+					child(spec.Index(3)),
+					child(spec.Index(4)),
+					child(spec.Index(5)),
+				),
+			},
+			str: `$
+├── ["foo"]
+│   ├── [0]
+│   ├── [1]
+│   └── [2]
+└── ["bar"]
+    ├── [3]
+    ├── [4]
+    └── [5]
+`,
+		},
+		{
+			name: "filter",
+			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(true, []*spec.Segment{})),
+				}}),
+			}}))},
+			str: "$\n└── [?($)]\n",
+		},
+		{
+			name: "filter_and_key",
+			segs: []*segment{
+				child(spec.Name("x")),
+				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+						spec.Existence(spec.Query(true, []*spec.Segment{})),
+					}}),
+				}})),
+			},
+			str: "$\n├── [\"x\"]\n└── [?($)]\n",
+		},
+		{
+			name: "filter_and_key_segment",
+			segs: []*segment{
+				child(
+					spec.Name("x"),
+					spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+						spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+							spec.Existence(spec.Query(true, []*spec.Segment{})),
+						}}),
+					}}),
+				),
+			},
+			str: "$\n└── [\"x\",?($)]\n",
+		},
+		{
+			name: "nested_filter",
+			segs: []*segment{child(spec.Name("x")).Append(
+				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+						spec.Existence(spec.Query(true, []*spec.Segment{})),
+					}}),
+				}})),
+			)},
+			str: "$\n└── [\"x\"]\n    └── [?($)]\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			n := Tree{root: &segment{children: tc.segs}}
+			a.Equal(tc.str, n.String(), tc.name)
+		})
+	}
+}
+
 func TestNew(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
