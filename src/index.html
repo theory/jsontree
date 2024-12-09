@@ -64,11 +64,7 @@
         "$..price",
       ];
 
-      const getQueryExample = () => {
-        const num = Math.floor(Math.random() * 4);
-        // num.
-        QUERY_EXAMPLES[Math.floor(Math.random() * QUERY_EXAMPLES.length)];
-      }
+      const getQueryExample = () => QUERY_EXAMPLES[Math.floor(Math.random() * QUERY_EXAMPLES.length)];
 
       const getOptions = function () {
         let options = 0;
@@ -262,7 +258,7 @@
     </div>
   </noscript>
   <div id="fluid">
-    <input id="path" placeholder="Enter one JSONTree query per line…" />
+    <textarea id="paths" placeholder="Enter one JSONTree query per line…"></textarea>
     <div id="go">
       <button id="exec-btn">Run Query</button>
       <button id="permalink"
