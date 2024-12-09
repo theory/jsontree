@@ -13,7 +13,8 @@ import (
 
 // Tree represents a tree of JSONPath query expressions.
 type Tree struct {
-	root *segment
+	root  *segment
+	index bool
 }
 
 // selectorsFor returns the selectors from seg, eliminating duplicates. Slices
@@ -43,7 +44,7 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 		return 0
 	})
 
-	ret := make([]spec.Selector, 0, len(selectors))
+	ret := selectors[:0]
 	for _, sel := range selectors {
 		if _, ok := sel.(spec.WildcardSelector); ok {
 			// Wildcard trumps all other selectors.
@@ -56,8 +57,20 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 	return ret, false
 }
 
-// New compiles paths into a Tree that can be used to select all of their
-// paths.
+// NewFixedModeTree compiles paths into a fixed mode Tree that selects all of
+// their paths. Array items selected by the paths will be preserved at the
+// index in which they appear in the input value passed to [Tree.Select];
+// Any preceding unselected array indexes will be nil.
+func NewFixedModeTree(paths ...*jsonpath.Path) *Tree {
+	tree := New(paths...)
+	tree.index = true
+	return tree
+}
+
+// New compiles paths into an ordered mode Tree that selects of their paths.
+// Array items selected by the paths will be preserved in the order in which
+// they appear in the input value passed to [Tree.Select]. Unselected array
+// indexes will be omitted.
 //
 //nolint:gocognit
 func New(paths ...*jsonpath.Path) *Tree {
@@ -125,6 +138,7 @@ PATH:
 	return &Tree{root: root}
 }
 
+// newChild creates a new child, appends it to cur.children, and returns it.
 func newChild(cur *segment, seg *spec.Segment, selectors []spec.Selector) *segment {
 	child := child(selectors...)
 	child.descendant = seg.IsDescendant()
@@ -133,7 +147,7 @@ func newChild(cur *segment, seg *spec.Segment, selectors []spec.Selector) *segme
 }
 
 // String returns a string representation of seg, starting from "$" for the
-// root, and including all of its child segments in as a tree diagram.
+// root, and including all of its child segments as a tree diagram.
 func (tree *Tree) String() string {
 	return "$\n" + tree.root.String()
 }
@@ -152,17 +166,70 @@ func (tree *Tree) Select(from any) any {
 	case map[string]any:
 		ret := map[string]any{}
 		tree.selectObjectSegment(tree.root, entity, entity, ret)
-		return ret
+		if tree.index {
+			return ret
+		}
+		return compressObject(ret)
 	case []any:
 		ret := make([]any, 0, cap(entity))
 		if sel := tree.selectArraySegment(tree.root, entity, entity, ret); sel != nil {
-			return sel
+			if tree.index {
+				return sel
+			}
+			return compressArray(sel)
 		}
 		return ret
 	default:
 		// Cannot select from any other type. Following RFC 9535, return nil.
 		return nil
 	}
+}
+
+// compressArray recursively removes all unselected indexes from array and its
+// array descendants and returns the result. Used by [Select] for Trees
+// created by [New], but not those created by [NewFixedModeTree].
+//
+// It would be nice to find a way to enable this behavior without iterating
+// over the entire selected value before returning it. An attempt to use a
+// struct that automatically handled both append and index-preserving modes
+// failed because arrays can be processed multiple times, but should not be
+// appended multiple times. Thus this solution simply records when a selected
+// value is nil (see [Tree.insert]), and then recursively iterates over all
+// arrays to remove them.
+func compressArray(array []any) []any {
+	ret := array[:0]
+	for _, v := range array {
+		switch v := v.(type) {
+		case nullVal:
+			// null was selected, keep it as a nil.
+			ret = append(ret, nil)
+		case []any:
+			//nolint:asasalint
+			ret = append(ret, compressArray(v))
+		case map[string]any:
+			ret = append(ret, compressObject(v))
+		case nil:
+			// Skip it.
+		default:
+			ret = append(ret, v)
+		}
+	}
+	return slices.Clip(ret)
+}
+
+// compressArray recursively removes all unselected indexes from arrays in
+// object and its array descendants and returns the result. Used by [Select]
+// for Trees created by [New], but not those created by [NewFixedModeTree].
+func compressObject(object map[string]any) map[string]any {
+	for k, v := range object {
+		switch v := v.(type) {
+		case []any:
+			object[k] = compressArray(v)
+		case map[string]any:
+			object[k] = compressObject(v)
+		}
+	}
+	return object
 }
 
 // selectObjectSegment uses the selectors in seg to select paths from src into
@@ -276,6 +343,26 @@ func (tree *Tree) dispatchObject(seg *segment, root any, cur map[string]any, dst
 	return nil
 }
 
+type nullVal struct{}
+
+//nolint:gochecknoglobals
+var null = nullVal{}
+
+// insert inserts val into dst at idx. If tree.index is false and val is nil,
+// it inserts null, so that it will not be removed by [compressArray].
+func (tree *Tree) insert(idx int, dst []any, val any) []any {
+	if idx >= len(dst) {
+		dst = dst[:idx+1]
+	}
+
+	if !tree.index && val == nil {
+		dst[idx] = null
+	} else {
+		dst[idx] = val
+	}
+	return dst
+}
+
 // processIndex fetches the value for idx from src and, if the value exists,
 // stores it in dst. Indexes are always preserved: when idx is 2, the value
 // will be stored in index 2 in dst, even if its length was 0.
@@ -299,8 +386,7 @@ func (tree *Tree) processIndex(idx int, seg *segment, root any, cur, dst []any) 
 
 	// Keep the value if it's the end of the path.
 	if len(seg.children) == 0 {
-		dst[idx] = cur[idx]
-		return dst
+		return tree.insert(idx, dst, cur[idx])
 	}
 
 	// Allow the child segments to select from an object or array. Return the
@@ -308,13 +394,11 @@ func (tree *Tree) processIndex(idx int, seg *segment, root any, cur, dst []any) 
 	switch val := cur[idx].(type) {
 	case map[string]any:
 		if sub := tree.dispatchObject(seg, root, val, dst[idx]); sub != nil {
-			dst[idx] = sub
-			return dst
+			return tree.insert(idx, dst, sub)
 		}
 	case []any:
 		if sub := tree.dispatchArray(seg, root, val, dst[idx]); sub != nil {
-			dst[idx] = sub
-			return dst
+			return tree.insert(idx, dst, sub)
 		}
 	}
 
@@ -432,19 +516,13 @@ func (tree *Tree) descendArray(seg *segment, root any, cur, dst []any) []any {
 		switch v := v.(type) {
 		case map[string]any:
 			if sub := tree.dispatchObject(seg, root, v, subDest); sub != nil {
-				// We have data. Resize the array and save it.
-				if i >= dstLen {
-					dst = dst[:i+1]
-				}
-				dst[i] = sub
+				// We have data, insert it into the destination array.
+				dst = tree.insert(i, dst, sub)
 			}
 		case []any:
 			if sub := tree.dispatchArray(seg, root, v, subDest); sub != nil {
-				// We have data. Resize the array and save it.
-				if i >= dstLen {
-					dst = dst[:i+1]
-				}
-				dst[i] = sub
+				// We have data, insert it into the destination array.
+				dst = tree.insert(i, dst, sub)
 			}
 		}
 	}

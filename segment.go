@@ -2,6 +2,7 @@ package jsontree
 
 import (
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/theory/jsonpath/spec"
@@ -328,7 +329,7 @@ func (seg *segment) mergeSelectors(selectors []spec.Selector) *segment {
 // another child segment, the former will be merged into the latter. It also
 // merges slice selectors where one slice is clearly a subset of another.
 func (seg *segment) deduplicate() {
-	merged := []*segment{}
+	merged := seg.children[:0]
 
 	for _, child := range seg.children {
 		child.deduplicate()
@@ -359,17 +360,14 @@ func (seg *segment) deduplicate() {
 		}
 	}
 
-	if len(merged) != len(seg.children) {
-		// XXX Shrink merged cap to its len?
-		seg.children = merged
-	}
+	seg.children = slices.Clip(merged)
 	seg.mergeSlices()
 }
 
 // mergeSlices compares [spec.SliceSelector]s in seg.selectors, and eliminates
 // any that are clear subsets of another.
 func (seg *segment) mergeSlices() {
-	merged := []spec.Selector{}
+	merged := seg.selectors[:0]
 SEL:
 	for _, sel := range seg.selectors {
 		if sel, ok := sel.(spec.SliceSelector); ok {
@@ -388,38 +386,24 @@ SEL:
 		merged = append(merged, sel)
 	}
 
-	if len(merged) != len(seg.selectors) {
-		// XXX Shrink merged cap to its len?
-		seg.selectors = merged
-	}
+	seg.selectors = slices.Clip(merged)
 }
 
 // removeCommonSelectorsFrom removes selectors from seg2 that are present in
-// seg. Returns true if all selectors are removed from seg2.
+// seg. Returns true if all selectors are removed from seg2 and can be pruned
+// from the tree.
 func (seg *segment) removeCommonSelectorsFrom(seg2 *segment) bool {
 	// Prune common selectors.
-	uniqueSel := []spec.Selector{}
+	uniqueSel := seg2.selectors[:0]
 	for _, sel := range seg2.selectors {
 		if !seg.hasSelector(sel) {
 			uniqueSel = append(uniqueSel, sel)
 		}
 	}
 
-	switch len(uniqueSel) {
-	case len(seg2.selectors):
-		// None in common.
-		return false
-	case 0:
-		// All merged
-		// XXX Shrink merged cap to its len?
-		seg2.selectors = uniqueSel
-		return true
-	default:
-		// Save only retained selectors.
-		// XXX Shrink merged cap to its len?
-		seg2.selectors = uniqueSel
-		return false
-	}
+	// Keep just the unique selectors and return true if there are none.
+	seg2.selectors = slices.Clip(uniqueSel)
+	return len(uniqueSel) == 0
 }
 
 // sameBranches returns true if seg has the same branches as seg2. It

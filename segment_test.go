@@ -1448,10 +1448,12 @@ func TestRemoveCommonSelectorsFrom(t *testing.T) {
 	}{
 		{
 			name: "empty",
+			res:  true,
 		},
 		{
 			name: "empty_seg2",
 			sel1: []spec.Selector{spec.Name("x")},
+			res:  true,
 		},
 		{
 			name: "no_commonality",

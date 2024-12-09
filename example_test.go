@@ -113,3 +113,52 @@ func ExampleTree_String() {
 	//     └── [0,2,1]
 	//         └── ["type","value"]
 }
+
+// Merge two path queries into an ordered mode JSONTree query. Note that the
+// second path selects the second item from the emails array, but the
+// [Tree.Select] returns it as the first item.
+func ExampleNew() {
+	value := map[string]any{
+		"name":  "Barrack Obama",
+		"years": "2009-2017",
+		"emails": []any{
+			"potus@example.com",
+			"barrack@example.net",
+		},
+	}
+
+	tree := jsontree.New(
+		jsonpath.MustParse("$.name"),
+		jsonpath.MustParse("$.emails[1]"),
+	)
+
+	// $.emails[1] appears at $emails[0].
+	fmt.Printf("%v\n", tree.Select(value))
+	// Output:
+	// map[emails:[barrack@example.net] name:Barrack Obama]
+}
+
+// Merge two path queries into a fixed mode JSONTree query. Note that the
+// second path selects the second item from the emails array and preserves its
+// index in the array returned by [Tree.Select] by offsetting the unselected
+// first item with nil.
+func ExampleNewFixedModeTree() {
+	value := map[string]any{
+		"name":  "Barrack Obama",
+		"years": "2009-2017",
+		"emails": []any{
+			"potus@example.com",
+			"barrack@example.net",
+		},
+	}
+
+	tree := jsontree.NewFixedModeTree(
+		jsonpath.MustParse("$.name"),
+		jsonpath.MustParse("$.emails[1]"),
+	)
+
+	// $.emails[1] remains at index 1, offset by nil.
+	fmt.Printf("%v\n", tree.Select(value))
+	// Output:
+	// map[emails:[<nil> barrack@example.net] name:Barrack Obama]
+}

@@ -8,10 +8,10 @@ The jsontree package provides [RFC 9535 JSONPath] tree selection in Go.
 ## JSONTree
 
 While [RFC 9535 JSONPath] queries select and return an array of values from
-the end of a path, JSONTree queries merge multiple JSONPath queries into a
-single query object that selects values from multiple paths. They return
-results not as an array, but as a subset of the query input, preserving the
-paths for each selected value.
+the end of a path expression, JSONTree queries merge multiple JSONPath queries
+into a single query that selects values from multiple path expressions. They
+return results not as an array, but as a subset of the query input, preserving
+the paths for each selected value.
 
 ### Example
 
@@ -85,7 +85,7 @@ Selects:
 ]
 ```
 
-JSONTree can merge these two queries into a single query that returns the
+JSONTree merges these two queries into a single query that returns the
 appropriate subset of the original JSON object:
 
 ``` json
@@ -116,17 +116,19 @@ appropriate subset of the original JSON object:
 }
 ```
 
-### Index Selection
+### Array Selection Modes
 
-The jsontree package's preservation of the input data structure in the result
-it returns applies transparently to JSON objects, but requires special
-handling for arrays. In order to preserve index locations exactly, any
-preceding values will be `null`.
+JSONTree queries select array values in one of two modes: *ordered mode* or
+*fixed mode*.
 
-For example, given a JSONTree expression that selects indexes 2 and 4:
+#### Ordered Mode
 
-``` jsonpath
-$[2, 4]
+The default mode, *ordered mode*, preserves the order of items selected from
+an array, but not their index positions. For example, given a JSONTree
+expression that selects indexes 1, 4, and 3:
+
+```jsonpath
+$[1, 4, 3]
 ```
 
 And an array with six values:
@@ -135,7 +137,7 @@ And an array with six values:
 [
   "zero",
   "one",
-  "two",
+  null,
   null,
   "four",
   "five"
@@ -146,67 +148,116 @@ The query wil return the following result:
 
 ```json
 [
-  null,
-  null,
-  "two",
+  "one",
   null,
   "four"
 ]
 ```
 
-This preserves the index position of the selected values at the cost of `null`
-values for unselected values. But note that the `null` value at index three in
-the source array is indistinguishable from the `null` for the "unselected"
-value at index three in the result. To avoid these issues, only select indexes
-and slices from the start of an array whenever possible.
+Note that the items retain the order in which the appear in the input array,
+but their indexes have changed:
 
-A future release may add an option to drop positional preservation for array
-values, in which case the result would be:
+*   Item `"one"` moved from index 1 in the input array to index 0 in the
+    result
+*   The `null` selected from index 3 in the input array appears at index 1 in
+    the result
+*   Item `"four"` moved from index 4 in the input array to index 2 in the
+    result
+
+#### Fixed Mode
+
+In some cases it may be preferable to preserve the index positions of selected
+values. *Fixed mode* does so by offsetting selected values with `null`s. For
+example, given a JSONTree expression that selects indexes 1, 4, and 3:
+
+``` jsonpath
+$[1, 4, 3]
+```
+
+And an array with six values:
+
+``` json
+[
+  "zero",
+  "one",
+  null,
+  null,
+  "four",
+  "five"
+]
+```
+
+Fixed mode produces this result:
 
 ```json
 [
-  "two",
+  null,
+  "one",
+  null,
+  null,
   "four"
 ]
 ```
 
-### What For
+The values from indexes 1, 3, and 4 remain at those positions in the result,
+with gaps between them taken up by `null`s.
 
-What, you might wonder, is the point? A couple of use cases drove the
-conception and design of the jsonpath package.
+Note that the `null` at index 3 selected from the source array is
+indistinguishable from the `null` for the unselected values at indexes 0 and
+2. To avoid this ambiguity in fixed mode, either disallow `null` values in
+inputs, or select only indexes and slices from the start of an array, with no
+gaps. For example, selecting indexes 0 - 2:
+
+```jsonpath
+$.[0:3]
+```
+
+Requires no `null` filler values, so we can be sure that the `null`s at
+indexes 0 and 2 are from the source:
+
+```json
+[
+  null,
+  "one",
+  null
+]
+```
+
+### Use Cases
+
+A couple of use cases drove the conception and design of JSONPath.
 
 #### Permissions
 
 Consider an application in which [ACL]s define permissions for groups of users
-to access specific branches or fields of JSON documents. Whe delivering a
+to access specific branches or fields of JSON documents. When delivering a
 document, the app would:
 
 *   Fetch the groups the user belongs to
 *   Convert the permissions from each into JSONPath queries
-*   Compile the permission JSONPath queries into a JSONTree query
+*   Compile the JSONPath queries into an *ordered mode* JSONTree query
 *   Select and return the permitted subset of the document to the user
 
 #### Selective Indexing
 
 Consider a searchable document storage system. For large or complex documents,
-it may not be feasible or required to index the entire document for searching.
-To index just a subset of the fields or branches, one would:
+it may be infeasible or unnecessary to index the entire document for full-text
+search. To index a subset of the fields or branches, one would:
 
 *   Define JSONPaths the fields or branches to index
-*   Compile the indexing JSONPath queries into a JSONTree query
-*   Select and return only the specified subset of each document for the
+*   Compile the JSONPath queries into a *fixed mode* JSONTree query
+*   Select and submit only the specified subset of each document to the
     indexing system
 
 ## How it Works
 
-The jsontree package can merge any number of [jsonpath] package queries into a
-single tree query, but relies on the [jsonpath] package's [Selector]s for
-execution. But while JSONPath expresses a sequence of path segments, where one
-segment leads to the next, JSONTree expresses them as a tree, where one
-segment leads to any number of subsequent segments. This allows multiple
-JSONPath expressions to be combined into a single query that can select
-multiple parts of a structured JSON value and preserve that subset of its
-structure.
+The jsontree package merges any number of [jsonpath] package queries into a
+single tree query, and relies on the [jsonpath] package's [Selector]s for
+execution. But while JSONPath expresses a *sequence* of path segments, where
+one segment leads to the next, JSONTree compiles them into a *tree*, where one
+segment leads to any number of segment branches. This allows multiple JSONPath
+expressions to be combined into a single query that selects multiple parts of
+a structured JSON value and preserves that subset of its structure.
 
 In other words, JSONPath represents a list of selectors, for example:
 
@@ -226,7 +277,16 @@ Given an object, this JSONPath will:
 *   If that segment is an object, return an array of the values under the
     subset of the keys "x", "y", and "z" that exist in the object
 
-JSONTree, on the other hand, represents a tree of selectors, for example:
+JSONTree, on the other hand, represents a tree of selectors, for example
+combining these JSONPaths:
+
+```jsonpath
+$.foo["x"].*["a", "b"]
+$.foo["y"].*["a", "b"]
+$.bar.hi
+```
+
+Into this tree structure:
 
 ```tree
 $
@@ -270,13 +330,13 @@ duplicate selectors, jsontree does not, since it preserves the original data
 structure along the selected paths. Redundant selectors can therefore be
 eliminated. For example, this JSONPath segment:
 
-``` jsonpath
+`` json
 ["x", "y", "x", "x", 0, 1, 0]
 ```
 
 Reduces to:
 
-```jsonpath
+``` json
 ["x", "y", 0, 1]
 ```
 
@@ -332,10 +392,10 @@ Of course reduces to:
 
 ### Segment Merging
 
-The jsontree package also merges selectors between paths where it can, to
-reduce redundant selection and maximize query performance. It does so wherever
-segments at the same level of hierarchy contain equivalent sub-segments, or
-when their selectors are equivalent.
+The jsontree package also merges selectors *between* path branches where it
+can, to reduce redundant selection and maximize query performance. It does so
+wherever branches contain equivalent sub-segments, or when their selectors are
+equivalent.
 
 For example, given these two paths:
 
@@ -402,8 +462,8 @@ logically equivalent but have different orders of operands, so would not be
 considered equivalent. This may be rectified in the future by normalizing
 filter stringification.
 
-Slice comparison is also sometimes impossible, mainly when using negative
-index arguments, since the resulting depend on the length of input.
+Slice and index comparison is also sometimes impossible, mainly when using
+negative indexes, since the results depend on the length of input.
 
 These redundancies should be acceptable, however, as relatively less common
 expressions that trigger multiple selection of the same values. Their places
