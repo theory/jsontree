@@ -1,0 +1,9 @@
+{
+  "gopls": {
+    "build.env": {
+      "GOOS": "js",
+      "GOARCH": "wasm"
+    }
+  },
+  "cSpell.words": ["Goldmark", "jsontree", "Paren", "segs"]
+}

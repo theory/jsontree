@@ -1,3 +1,4 @@
+// package main provides the Wasm app.
 package main
 
 import (
@@ -5,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	//nolint
 	"syscall/js"
 
 	"github.com/theory/jsonpath"
@@ -19,13 +18,13 @@ const (
 )
 
 func main() {
-	c := make(chan struct{}, 0)
+	stream := make(chan struct{})
 
 	js.Global().Set("query", js.FuncOf(query))
 	js.Global().Set("optFixed", js.ValueOf(optFixed))
 	js.Global().Set("optDebug", js.ValueOf(optDebug))
 
-	<-c
+	<-stream
 }
 
 func query(_ js.Value, args []js.Value) any {
@@ -48,7 +47,7 @@ func execute(queries, target string, opts int) string {
 	for i, line := range strings.Split(queries, "\r\n") {
 		p, err := jsonpath.Parse(line)
 		if err != nil {
-			return fmt.Sprintf("Error parsing line %i: %v", i, err)
+			return fmt.Sprintf("Error parsing line %v: %v", i, err)
 		}
 		paths = append(paths, p)
 	}
