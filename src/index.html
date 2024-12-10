@@ -64,7 +64,18 @@
         "$..price",
       ];
 
-      const getQueryExample = () => QUERY_EXAMPLES[Math.floor(Math.random() * QUERY_EXAMPLES.length)];
+      const getQueryExample = () => {
+        // Randomly select 2-4 of the example queries.
+        const seen = Array.apply(false, Array(QUERY_EXAMPLES.length));
+        return Array.apply(null, Array(Math.floor(Math.random() * 3)+2)).map(() => {
+          var idx = Math.floor(Math.random() * QUERY_EXAMPLES.length);
+          while (seen[idx]) {
+            idx = Math.floor(Math.random() * QUERY_EXAMPLES.length);
+          }
+          seen[idx] = true
+          return QUERY_EXAMPLES[idx]
+        }).join("\n")
+      }
 
       const getOptions = function () {
         let options = 0;
@@ -105,6 +116,8 @@
       }
 
       const go = new Go();
+      // https://github.com/tinygo-org/tinygo/issues/1140#issuecomment-1783897193
+      go.importObject.gojs["syscall/js.finalizeRef"] = _ => 0;
       const WASM_URL = './play.wasm';
 
       var wasm;
@@ -116,9 +129,12 @@
         if (u.searchParams.has("o")) {
           setOptions(u.searchParams.get("o"));
         }
-        $("paths").value = u.searchParams.has("p")
+
+        const paths = $("paths")
+        paths.value = u.searchParams.has("p")
           ? decodeURIComponent(u.searchParams.get("p"))
           : getQueryExample();
+        fit(paths);
 
         const json = $("json");
         json.value = u.searchParams.has("j")
