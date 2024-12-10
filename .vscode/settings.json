@@ -5,5 +5,12 @@
       "GOARCH": "wasm"
     }
   },
-  "cSpell.words": ["Goldmark", "jsontree", "Paren", "segs"]
+  "cSpell.words": [
+    "Goldmark",
+    "jsontree",
+    "Moby",
+    "Paren",
+    "Rees",
+    "segs"
+  ]
 }
