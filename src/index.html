@@ -130,11 +130,9 @@
           setOptions(u.searchParams.get("o"));
         }
 
-        const paths = $("paths")
-        paths.value = u.searchParams.has("p")
+        $("paths").value = u.searchParams.has("p")
           ? decodeURIComponent(u.searchParams.get("p"))
           : getQueryExample();
-        fit(paths);
 
         const json = $("json");
         json.value = u.searchParams.has("j")
@@ -180,11 +178,11 @@
       About
     </h2>
     <p>This is the playground for <strong>github.com/theory/jsontree</strong>,
-    a Go package that compiles multiple <a href="https://www.rfc-editor.org/rfc/rfc9535.html">RFC 9535 JSONPath</a> to select and preserve multiple paths from arbitrary JSON data.</p>
+    a Go package that compiles multiple <a href="https://www.rfc-editor.org/rfc/rfc9535.html">RFC 9535 JSONPath</a> queries to select and preserve a tree of paths from JSON data.</p>
     <p>The playground runs entirely in the browser thanks to <a href="https://tinygo.org"
         title="TinyGo — A Go Compiler For Small Places">TinyGo</a>, which compiles the
       <strong>github.com/theory/jsontree</strong> package into Web Assembly.</p>
-    <p>Learn more about JSONtree by reading the <a href="https://github.com/theory/jsontree/blob/main/README.md">JSONTree Documentation</a>, and more about <strong>github.com/theory/jsontree</strong> by following the links at the bottom of
+    <p>Learn more about JSONtree by reading the <a href="https://github.com/theory/jsontree/blob/main/README.md">documentation</a>, and more about <strong>github.com/theory/jsontree</strong> by following the links at the bottom of
       the page. The code for this website can be found <a href="https://github.com/theory/jsontree/tree/playground">on
         GitHub</a>.
   </details>
@@ -276,10 +274,9 @@
   <div id="fluid">
     <textarea id="paths" placeholder="Enter one JSONTree query per line…"></textarea>
     <div id="go">
+      <button id="permalink" title="Reload with a permanent link that populates all the fields and executes the query">Permalink</button>
       <button id="exec-btn">Run Query</button>
-      <button id="permalink"
-        title="Reload with a permanent link that populates all the fields and executes the query">Permalink</button>
-    </div>
+      </div>
   </div>
   <div id="container">
     <div id="input">
@@ -288,16 +285,17 @@
       </label>
     </div>
     <div id="output">
-      <label for="optFixed" title="Preserve the index position of array items">
+      <label for="optFixed" class="opt" title="Preserve the index position of array items">
         <input id="optFixed"  title="Preserve the index position of array items" type="checkbox" />
         Fixed Mode
       </label>
-      <label for="optDebug" title="Print the string representation of the JSONTree">
+      <label for="optDebug" class="opt" title="Print the string representation of the JSONTree">
         <input id="optDebug" title="Print the string representation of the JSONTree" type="checkbox" />
         Debug
       </label>
-      <label for="result" title="The data selected from the JSON Input">Query Output</label>
-      <textarea id="result" title="The data selected from the JSON Input" readonly>null</textarea>
+      <label for="result" title="The data selected from the JSON Input">Query Output
+        <textarea id="result" readonly>null</textarea>
+      </label>
     </div>
   </div>
   <footer>

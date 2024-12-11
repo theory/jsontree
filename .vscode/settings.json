@@ -6,11 +6,17 @@
     }
   },
   "cSpell.words": [
+    "Boxicons",
     "Goldmark",
     "jsontree",
     "Moby",
     "Paren",
     "Rees",
-    "segs"
-  ]
+    "segs",
+    "serde",
+    "syscall"
+  ],
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": "file:///Users/david/dev/go/jsontree/.github/workflows/deploy.yml"
+  }
 }
