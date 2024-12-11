@@ -44,10 +44,14 @@ func execute(queries, target string, opts int) string {
 
 	// Parse the JSONPath queries
 	paths := []*jsonpath.Path{}
-	for i, line := range strings.Split(queries, "\n") {
+	for lineNo, line := range strings.Split(queries, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
 		p, err := jsonpath.Parse(line)
 		if err != nil {
-			return fmt.Sprintf("Error parsing line %v: %v", i, err)
+			return fmt.Sprintf("Error parsing line %v: %v", lineNo, err)
 		}
 		paths = append(paths, p)
 	}
