@@ -5,6 +5,13 @@ RFC 9535 JSONPath Tree Queries in Go
 
 The jsontree package provides [RFC 9535 JSONPath] tree selection in Go.
 
+## Learn More
+
+*   🛝 Try it out in the [Playground].
+*   📦 See the [package documentation][docs] for usage and examples.
+*   📚 See the [RFC 9535 JSONPath] standard for details on the JSONPath query
+    syntax and examples of its usage.
+
 ## JSONTree
 
 While [RFC 9535 JSONPath] queries select and return an array of values from
@@ -491,8 +498,7 @@ Copyright © 2024 David E. Wheeler
   [cov]: https://codecov.io/gh/theory/jsontree "📊 Code Coverage"
   [RFC 9535 JSONPath]: https://www.rfc-editor.org/rfc/rfc9535.html
     "RFC 9535 JSONPath: Query Expressions for JSON"
-  [RFC 9535]: https://datatracker.ietf.org/doc/rfc9535/
-    "JSONPath: Query Expressions for JSON"
+  [Playground]: https://theory.github.io/jsontree/ "Go JSONTree Playground"
   [jsonpath]: https://pkg.go.dev/jsonpath
   [Selector]: https://pkg.go.dev/jsonpath/spec#Selector
   [ACL]: https://en.wikipedia.org/wiki/Access-control_list
