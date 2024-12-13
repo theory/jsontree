@@ -36,12 +36,6 @@ func query(_ js.Value, args []js.Value) any {
 }
 
 func execute(queries, target string, opts int) string {
-	// Parse the JSON.
-	var value any
-	if err := json.Unmarshal([]byte(target), &value); err != nil {
-		return fmt.Sprintf("Error parsing JSON: %v", err)
-	}
-
 	// Parse the JSONPath queries
 	paths := []*jsonpath.Path{}
 	for lineNo, line := range strings.Split(queries, "\n") {
@@ -67,6 +61,12 @@ func execute(queries, target string, opts int) string {
 	// Just output the string representation of the tree.
 	if opts&optDebug == optDebug {
 		return tree.String()
+	}
+
+	// Parse the JSON.
+	var value any
+	if err := json.Unmarshal([]byte(target), &value); err != nil {
+		return fmt.Sprintf("Error parsing JSON: %v", err)
 	}
 
 	// Execute the query against the JSON.
