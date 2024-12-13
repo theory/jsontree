@@ -3,14 +3,14 @@ Go JSONTree Playground
 
 The source for the [Go JSONTree Playground], a stateless single-page web site
 for experimenting with the Go [jsontree] package. Compiled via [TinyGo] into a
-ca. 254K [Wasm] file and loaded directly into the page. All functionality
+ca. 270K [Wasm] file and loaded directly into the page. All functionality
 implemented in JavaScript and Go, heavily borrowed from the [Go JSONPath
 Playground], [Goldmark Playground] and [serde_json_path Sandbox].
 
 Usage
 -----
 
-Write one or more JSONPath queries, in the input field, one per line, and hit
+Write one or more JSONPath queries in the input field, one per line, and hit
 the "Run Query" button to select the subset of the JSON in the "JSON Input"
 field. The results will appear in the "Query Output" field.
 
@@ -22,10 +22,13 @@ Read on for details and additional features.
 
 Select options for execution and the display of results:
 
-*   **Fixed**: "Fixed mode" preserves the index position of items selected
-    from arrays, filling gaps wit `null`s. This contrasts with the default
-    "ordered mode", which preserves the order but not index position of array
-    items.
+*   **Debug**: Don't execute the query, but print its compiled form as a tree
+    diagram. Useful for validating that the compiler properly merged selectors
+    and segments.
+
+*   **Fixed Mode**: Preserve the index position of items selected from arrays,
+    filling gaps with `null`s. This contrasts with the default "ordered mode",
+    which preserves the order but not index position of array items.
 
 ### Permalink
 
@@ -37,11 +40,11 @@ Note that the Playground is stateless; no data is stored except in the
 Permalink URL itself (and whatever data collection GitHub injects; see its
 [privacy statement] for details).
 
-### Path
+### Paths
 
-Input the JSONPath queries to execute into this field. On load, the app will
-pre-load example queries. See [RFC 9535] for details on the jsonpath
-language.
+Input the JSONPath queries to compile and execute, one per line, into this
+field. On load, the app will pre-load 2-4 example queries. See [RFC 9535] for
+details on the JSONPath language.
 
 ### JSON Input
 
