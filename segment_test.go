@@ -222,6 +222,13 @@ func TestWriteSeg(t *testing.T) {
 			),
 			str: "[\"x\"]\n└── [?($)]\n",
 		},
+		{
+			name: "slice_def_start_stop_neg_step",
+			seg: child(spec.Name("x")).Append(
+				child(spec.Slice(nil, nil, -1)),
+			),
+			str: "[\"x\"]\n└── [::-1]\n",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -1032,6 +1039,12 @@ func TestContainsSlice(t *testing.T) {
 			slice: spec.Slice(3, 5),
 			exp:   false,
 		},
+		{
+			name:  "defaults_neg_slice_covers_all",
+			list:  []spec.Selector{spec.Slice(nil, nil, -1)},
+			slice: spec.Slice(0, 2),
+			exp:   true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -1253,6 +1266,12 @@ func TestMergeSelectors(t *testing.T) {
 			selectors: []spec.Selector{spec.Slice(2), spec.Name("x")},
 			merge:     []spec.Selector{spec.Index(2), spec.Name("y")},
 			exp:       []spec.Selector{spec.Slice(2), spec.Name("x"), spec.Name("y")},
+		},
+		{
+			name:      "neg_slice_index",
+			selectors: []spec.Selector{spec.Slice(nil, nil, -1)},
+			merge:     []spec.Selector{spec.Index(0), spec.Index(2)},
+			exp:       []spec.Selector{spec.Slice(nil, nil, -1)},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

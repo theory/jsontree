@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.1.1] — 2024-12-12
+
+### 🪲 Bug Fixes
+
+The theme of this release is *Details, details.*
+
+*   Fixed a bug where indexes failed to merge into slices with step -1.
+
+  [v0.1.1]: https://github.com/theory/jsontree/compare/v0.1.0...v0.1.1
+
 ## [v0.1.0] — 2024-12-09
 
 The theme of this release is *Standards Matter.*
@@ -33,7 +43,6 @@ The theme of this release is *Standards Matter.*
     and operation in the [README].
 *   Docs on [pkg.go.dev]
 
-  [v0.1.0]: https://github.com/theory/jsontree/compare/e5d84e4...v0.1.0
   [github.com/theory/jsonpath]: https://pkg.go.dev/github.com/theory/jsonpath
   [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
     "RFC 9535 JSONPath: Query Expressions for JSON"

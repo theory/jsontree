@@ -173,7 +173,7 @@ func containsIndex(selectors []spec.Selector, idx spec.Index) bool {
 		case spec.SliceSelector:
 			// Negative bounds and backward slice without -1 step depend on
 			// input length, so cannot be determined independently.
-			if s.Start() < 0 || s.End() < 0 || (s.End() < s.Start() && s.Step() != -1) {
+			if s.Start() < 0 || (s.End() < s.Start() && s.Step() != -1) {
 				return false
 			}
 
@@ -266,8 +266,8 @@ func sliceInSlice(sub, sup spec.SliceSelector) bool {
 			return true
 		}
 	case sub.Step() > 0 && sup.Step() < 0:
-		// sub forward vs sup backward: is sub between sup start and end?
-		if sub.End() > sup.Start() && sub.Start()-1 >= sup.End() {
+		// sub forward vs sup backward: is sub between sup end and start?
+		if sub.Start() > sup.End() && sub.End()-1 <= sup.Start() {
 			return true
 		}
 	}

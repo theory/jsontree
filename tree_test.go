@@ -2248,6 +2248,19 @@ func TestNew(t *testing.T) {
 				),
 			},
 		},
+		{
+			name:  "merge_slice_neg_step",
+			paths: []string{"$.store.book[::-1]", "$.store.book[0, 2]"},
+			exp: &Tree{
+				root: child().Append(
+					child(spec.Name("store")).Append(
+						child(spec.Name("book")).Append(
+							child(spec.Slice(nil, nil, -1)),
+						),
+					),
+				),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

@@ -3,8 +3,8 @@ module github.com/theory/jsontree
 go 1.22
 
 require (
-	github.com/stretchr/testify v1.9.0
-	github.com/theory/jsonpath v0.2.0
+	github.com/stretchr/testify v1.10.0
+	github.com/theory/jsonpath v0.2.1
 )
 
 require (
