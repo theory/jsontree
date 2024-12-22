@@ -13,6 +13,11 @@ All notable changes to this project will be documented in this file. It uses the
 
 *   Added playground links to the README.
 
+### 🪲 Bug Fixes
+
+*   Fixed an issue where slice selectors were not properly merged when more
+    than one slice encapsulated another.
+
   [v0.1.2]: https://github.com/theory/jsontree/compare/v0.1.1...v0.1.2
 
 ## [v0.1.1] — 2024-12-12

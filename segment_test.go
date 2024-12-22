@@ -1720,7 +1720,7 @@ func TestMergeSlices(t *testing.T) {
 			exp:  child(spec.Name("x"), spec.Slice(10)),
 		},
 		{
-			name: "sub_slice",
+			name: "sub_slice_slice",
 			seg:  child(spec.Name("x"), spec.Slice(8), spec.Slice(10), spec.Slice(12, 18)),
 			exp:  child(spec.Name("x"), spec.Slice(8)),
 		},
@@ -1738,6 +1738,11 @@ func TestMergeSlices(t *testing.T) {
 			name: "multi_overlap_reverse",
 			seg:  child(spec.Name("x"), spec.Slice(4, 5), spec.Slice(2, 5), spec.Slice(8), spec.Slice(12, 18)),
 			exp:  child(spec.Name("x"), spec.Slice(2, 5), spec.Slice(8)),
+		},
+		{
+			name: "three_in_one",
+			seg:  child(spec.Slice(2, 4), spec.Slice(1, 3), spec.Slice(0, 5)),
+			exp:  child(spec.Slice(0, 5)),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

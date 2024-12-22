@@ -367,23 +367,32 @@ func (seg *segment) deduplicate() {
 // mergeSlices compares [spec.SliceSelector]s in seg.selectors, and eliminates
 // any that are clear subsets of another.
 func (seg *segment) mergeSlices() {
-	merged := seg.selectors[:0]
-SEL:
-	for _, sel := range seg.selectors {
-		if sel, ok := sel.(spec.SliceSelector); ok {
-			for i, ss := range merged {
-				if ss, ok := ss.(spec.SliceSelector); ok {
-					if sliceInSlice(sel, ss) {
-						continue SEL
-					}
-					if sliceInSlice(ss, sel) {
-						merged[i] = sel
-						continue SEL
+	merged := seg.selectors
+
+	// Keep merging until nothing is replaced.
+	moved := true
+	for moved {
+		moved = false
+		orig := merged
+		merged = merged[:0]
+	SEL:
+		for _, sel := range orig {
+			if sel, ok := sel.(spec.SliceSelector); ok {
+				for i, ss := range merged {
+					if ss, ok := ss.(spec.SliceSelector); ok {
+						if sliceInSlice(sel, ss) {
+							continue SEL
+						}
+						if sliceInSlice(ss, sel) {
+							merged[i] = sel
+							moved = true
+							continue SEL
+						}
 					}
 				}
 			}
+			merged = append(merged, sel)
 		}
-		merged = append(merged, sel)
 	}
 
 	seg.selectors = slices.Clip(merged)

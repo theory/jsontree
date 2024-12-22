@@ -2315,7 +2315,7 @@ func TestSelectorsFor(t *testing.T) {
 			wild:   true,
 		},
 		{
-			name: "mix_selectors_frst",
+			name: "mix_selectors_first",
 			seg: spec.Child(
 				spec.Name("x"),
 				spec.Index(1),
