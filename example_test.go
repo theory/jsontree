@@ -132,10 +132,15 @@ func ExampleNew() {
 		jsonpath.MustParse("$.emails[1]"),
 	)
 
+	js, err := json.Marshal(tree.Select(value))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// $.emails[1] appears at $emails[0].
-	fmt.Printf("%v\n", tree.Select(value))
+	fmt.Println(string(js))
 	// Output:
-	// map[emails:[barrack@example.net] name:Barrack Obama]
+	// {"emails":["barrack@example.net"],"name":"Barrack Obama"}
 }
 
 // Merge two path queries into a fixed mode JSONTree query. Note that the
@@ -157,8 +162,13 @@ func ExampleNewFixedModeTree() {
 		jsonpath.MustParse("$.emails[1]"),
 	)
 
+	js, err := json.Marshal(tree.Select(value))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// $.emails[1] remains at index 1, offset by nil.
-	fmt.Printf("%v\n", tree.Select(value))
+	fmt.Println(string(js))
 	// Output:
-	// map[emails:[<nil> barrack@example.net] name:Barrack Obama]
+	// {"emails":[null,"barrack@example.net"],"name":"Barrack Obama"}
 }
