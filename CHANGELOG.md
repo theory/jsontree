@@ -7,6 +7,14 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.1.2] — 2024-12-22
+
+### 📚 Documentation
+
+*   Added playground links to the README.
+
+  [v0.1.2]: https://github.com/theory/jsontree/compare/v0.1.1...v0.1.2
+
 ## [v0.1.1] — 2024-12-12
 
 ### 🪲 Bug Fixes
