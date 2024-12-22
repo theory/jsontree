@@ -3,9 +3,9 @@ Go JSONTree Playground
 
 The source for the [Go JSONTree Playground], a stateless single-page web site
 for experimenting with the Go [jsontree] package. Compiled via [TinyGo] into a
-ca. 270K [Wasm] file and loaded directly into the page. All functionality
-implemented in JavaScript and Go, heavily borrowed from the [Go JSONPath
-Playground], [Goldmark Playground] and [serde_json_path Sandbox].
+ca. 712 K (267 K compressed) [Wasm] file and loaded directly into the page.
+All functionality implemented in JavaScript and Go, heavily borrowed from the
+[Go JSONPath Playground], [Goldmark Playground] and [serde_json_path Sandbox].
 
 Usage
 -----
