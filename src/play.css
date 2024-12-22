@@ -117,6 +117,7 @@ body header h1 {
 body header button {
   flex: 0 0 auto;
   padding: .5rem;
+  line-height: 0;
   color: var(--color-button-lite);
   background-color: var(--color-canvas-subtle);
   border: 1px solid var(--color-button-lite);
@@ -237,7 +238,7 @@ body ul, body ol {
 
   #input {
     flex-direction: column;
-    padding-top: 1em;
+    padding: 1rem .5rem .5rem 0;
     width: 50%;
   }
 
@@ -249,7 +250,7 @@ body ul, body ol {
     flex-direction: column;
     width: 50%;
     height: 100%;
-    padding: 1rem 0 .5rem 1rem;
+    padding: 1rem 0 .5rem .5rem;
   }
 }
 
@@ -365,6 +366,7 @@ body ul, body ol {
 
 textarea {
   padding: .5rem;
+  box-sizing: border-box;
 }
 
 #container textarea {

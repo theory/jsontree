@@ -10,13 +10,27 @@ Playground], [Goldmark Playground] and [serde_json_path Sandbox].
 Usage
 -----
 
-Write one or more JSONPath queries in the input field, one per line, and hit
-the "Run Query" button to select the subset of the JSON in the "JSON Input"
-field. The results will appear in the "Query Output" field.
+On load, the form will be filled with sample JSON and 2-4 randomly-selected
+example queries. Hit the "Run Query" button to see the values the queries
+select from the JSON appear in the "Query Output" field.
+
+To try your own, paste the JSON to query into the "JSON" field and input the
+one or more JSONPath queries in the input field, one per line, and hit
+the "Run Query" button.
 
 That's it.
 
 Read on for details and additional features.
+
+### Docs
+
+The two buttons in the top-right corner provide documentation and links.
+
+*   Hit the button with the circled question mark in the top right corner to
+    reveal a table summarizing the JSONPath syntax.
+
+*   Hit the button with the circled i for information about the JSONTree
+    playground.
 
 ### Options
 
