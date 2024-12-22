@@ -11,7 +11,9 @@ All notable changes to this project will be documented in this file. It uses the
 
 ### 📚 Documentation
 
-*   Added playground links to the README.
+*   Added playground links to the README and fixed some typos.
+*   Updated the `New` and `NewFixedModeTree` examples to emit JSON instead of
+    Go map stringification.
 
 ### 🪲 Bug Fixes
 

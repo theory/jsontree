@@ -337,7 +337,7 @@ duplicate selectors, jsontree does not, since it preserves the original data
 structure along the selected paths. Redundant selectors can therefore be
 eliminated. For example, this JSONPath segment:
 
-`` json
+``` json
 ["x", "y", "x", "x", 0, 1, 0]
 ```
 
@@ -382,7 +382,7 @@ Slice subsets can also be pruned, e.g., this segment:
 Reduces to ([playground][play11]):
 
 ``` jsonpath
-[0:5]
+[:5]
 ```
 
 Duplicate filter selectors can also be eliminated; to whit, this segment:
