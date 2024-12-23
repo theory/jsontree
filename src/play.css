@@ -255,6 +255,9 @@ body ul, body ol {
 }
 
 @media screen and (max-width: 768px) {
+  body {
+    margin: 1rem;
+  }
   #container {
     display: flex;
     flex-direction: column;
