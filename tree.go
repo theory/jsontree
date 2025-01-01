@@ -72,8 +72,6 @@ func NewFixedModeTree(paths ...*jsonpath.Path) *Tree {
 // Array items selected by the paths will be preserved in the order in which
 // they appear in the input value passed to [Tree.Select]. Unselected array
 // indexes will be omitted.
-//
-//nolint:gocognit
 func New(paths ...*jsonpath.Path) *Tree {
 	root := child()
 	cur := root
