@@ -209,7 +209,6 @@ func compressArray(array []any) []any {
 			// null was selected, keep it as a nil.
 			ret = append(ret, nil)
 		case []any:
-			//nolint:asasalint
 			ret = append(ret, compressArray(v))
 		case map[string]any:
 			ret = append(ret, compressObject(v))
