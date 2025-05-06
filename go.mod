@@ -1,10 +1,12 @@
 module github.com/theory/jsontree
 
-go 1.22
+go 1.23
+
+toolchain go1.23.2
 
 require (
 	github.com/stretchr/testify v1.10.0
-	github.com/theory/jsonpath v0.2.1
+	github.com/theory/jsonpath v0.9.0
 )
 
 require (

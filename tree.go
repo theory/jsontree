@@ -49,7 +49,7 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 	for _, sel := range selectors {
 		if _, ok := sel.(spec.WildcardSelector); ok {
 			// Wildcard trumps all other selectors.
-			return []spec.Selector{spec.Wildcard}, true
+			return []spec.Selector{spec.Wildcard()}, true
 		}
 		if !selectorsContain(ret, sel) {
 			ret = append(ret, sel)
@@ -59,16 +59,16 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 }
 
 // NewFixedModeTree compiles paths into a fixed mode Tree that selects all of
-// their paths. Array items selected by the paths will be preserved at the
-// index in which they appear in the input value passed to [Tree.Select];
-// Any preceding unselected array indexes will be nil.
+// its paths. Array items selected by the paths will be preserved at the index
+// in which they appear in the input value passed to [Tree.Select]; Any
+// preceding unselected array indexes will be nil.
 func NewFixedModeTree(paths ...*jsonpath.Path) *Tree {
 	tree := New(paths...)
 	tree.index = true
 	return tree
 }
 
-// New compiles paths into an ordered mode Tree that selects of their paths.
+// New compiles paths into an ordered mode Tree that selects of its paths.
 // Array items selected by the paths will be preserved in the order in which
 // they appear in the input value passed to [Tree.Select]. Unselected array
 // indexes will be omitted.
@@ -145,7 +145,7 @@ func newChild(cur *segment, seg *spec.Segment, selectors []spec.Selector) *segme
 	return child
 }
 
-// String returns a string representation of seg, starting from "$" for the
+// String returns a string representation of tree, starting from "$" for the
 // root, and including all of its child segments as a tree diagram.
 func (tree *Tree) String() string {
 	buf := new(strings.Builder)
@@ -157,11 +157,10 @@ func (tree *Tree) String() string {
 	return buf.String()
 }
 
-// Select selects tree's paths from the from JSON value into a new value. For
-// a root-only JSONTree that contains no children, from will simply be
-// returned. All other JSONTree queries will select from the from value if
-// it's an array ([]any) or object (map[string]any), and return nil for any
-// other values.
+// Select selects tree's paths from the from JSON value into a new value. A
+// root-only JSONTree that contains no children simply returns from. All other
+// JSONTree queries will select from the from value if it's an array ([]any)
+// or object (map[string]any), and return nil for any other values.
 func (tree *Tree) Select(from any) any {
 	if len(tree.root.children) == 0 {
 		return from

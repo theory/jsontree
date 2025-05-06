@@ -2,11 +2,11 @@ GO ?= go
 
 .PHONY: test # Run the unit tests
 test:
-	$(GO) test ./... -count=1
+	GOTOOLCHAIN=local $(GO) test ./... -count=1
 
 .PHONY: cover # Run test coverage
 cover: $(shell find . -name \*.go)
-	$(GO) test -v -coverprofile=cover.out -covermode=count ./...
+	GOTOOLCHAIN=local $(GO) test -v -coverprofile=cover.out -covermode=count ./...
 	@$(GO) tool cover -html=cover.out
 
 .PHONY: lint # Lint the project
@@ -26,7 +26,7 @@ brew-lint-depends:
 
 .PHONY: debian-lint-depends # Install linting tools on Debian
 debian-lint-depends:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v1.64.4
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.1.6
 
 ## .git/hooks/pre-commit: Install the pre-commit hook
 .git/hooks/pre-commit:

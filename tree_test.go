@@ -45,7 +45,7 @@ func TestRunRoot(t *testing.T) {
 			default:
 				// Anything other than a slice or map returns nil if
 				// there are path segments.
-				sel.root = &segment{children: []*segment{child(spec.Wildcard)}}
+				sel.root = &segment{children: []*segment{child(spec.Wildcard())}}
 				a.Nil(sel.Select(tc.val))
 			}
 		})
@@ -87,13 +87,13 @@ func TestObjectSelection(t *testing.T) {
 		},
 		{
 			name: "filter_object",
-			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{child(spec.Filter(spec.And(
 				spec.Comparison(
-					spec.SingularQuery(false, []spec.Selector{spec.Name("a")}),
+					spec.SingularQuery(false, spec.Name("a")),
 					spec.GreaterThanEqualTo,
 					spec.Literal(int64(42)),
 				),
-			}}))},
+			)))},
 			obj: map[string]any{
 				"kim":   map[string]any{"a": 42, "firm": "HHM"},
 				"jimmy": map[string]any{"a": 41, "firm": "JMM"},
@@ -106,13 +106,13 @@ func TestObjectSelection(t *testing.T) {
 		},
 		{
 			name: "filter_object_key",
-			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{child(spec.Filter(spec.And(
 				spec.Comparison(
-					spec.SingularQuery(false, []spec.Selector{spec.Name("a")}),
+					spec.SingularQuery(false, spec.Name("a")),
 					spec.GreaterThanEqualTo,
 					spec.Literal(int64(42)),
 				),
-			}})).Append(child(spec.Name("firm")))},
+			))).Append(child(spec.Name("firm")))},
 			obj: map[string]any{
 				"kim":   map[string]any{"a": 42, "firm": "HHM"},
 				"jimmy": map[string]any{"a": 41, "firm": "JMM"},
@@ -131,45 +131,45 @@ func TestObjectSelection(t *testing.T) {
 		},
 		{
 			name: "key_and_filter",
-			segs: []*segment{child(spec.Name("x")), child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{child(spec.Name("x")), child(spec.Filter(spec.And(
 				spec.Comparison(
-					spec.SingularQuery(false, []spec.Selector{spec.Name("z")}),
+					spec.SingularQuery(false, spec.Name("z")),
 					spec.EqualTo,
 					spec.Literal("hi"),
 				),
-			}}))},
+			)))},
 			obj: map[string]any{"x": true, "y": map[string]any{"z": "hi"}, "z": "hi"},
 			exp: map[string]any{"x": true, "y": map[string]any{"z": "hi"}},
 		},
 		{
 			name: "key_then_filter_cur_true",
-			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(0))})),
-			}})))},
+			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Index(0)))),
+			))))},
 			obj: map[string]any{"x": true, "y": map[string]any{"z": []any{1}}, "z": "hi"},
 			exp: map[string]any{"y": map[string]any{"z": []any{1}}},
 		},
 		{
 			name: "key_then_filter_cur_false",
-			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(1))})),
-			}})))},
+			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Index(1)))),
+			))))},
 			obj: map[string]any{"x": true, "y": map[string]any{"z": []any{1}}, "z": "hi"},
 			exp: map[string]any{},
 		},
 		{
 			name: "key_then_filter_root_true",
-			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))})),
-			}})))},
+			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(true, spec.Child(spec.Name("x")))),
+			))))},
 			obj: map[string]any{"x": true, "y": map[string]any{"z": "hi"}, "z": "hi"},
 			exp: map[string]any{"y": map[string]any{"z": "hi"}},
 		},
 		{
 			name: "key_then_filter_root_false",
-			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("a"))})),
-			}})))},
+			segs: []*segment{child(spec.Name("y")).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(true, spec.Child(spec.Name("a")))),
+			))))},
 			obj: map[string]any{"x": true, "y": map[string]any{"z": "hi"}, "z": "hi"},
 			exp: map[string]any{},
 		},
@@ -234,7 +234,7 @@ func TestObjectSelection(t *testing.T) {
 		{
 			name: "wildcard_keys",
 			segs: []*segment{
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a")),
 					child(spec.Name("b")),
 				),
@@ -251,7 +251,7 @@ func TestObjectSelection(t *testing.T) {
 		{
 			name: "any_key_indexes",
 			segs: []*segment{
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Index(0)),
 					child(spec.Index(1)),
 				),
@@ -267,7 +267,7 @@ func TestObjectSelection(t *testing.T) {
 		},
 		{
 			name: "any_key_nonexistent_index",
-			segs: []*segment{child(spec.Wildcard).Append(child(spec.Index(1)))},
+			segs: []*segment{child(spec.Wildcard()).Append(child(spec.Index(1)))},
 			obj: map[string]any{
 				"x": []any{"a", "go", "b", 2, "c", 5},
 				"y": []any{"a"},
@@ -504,65 +504,63 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name: "filter_exists",
-			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
-					spec.Existence(spec.Query(true, []*spec.Segment{})),
-				}}),
-			}}))},
+			segs: []*segment{child(spec.Filter(spec.And(
+				spec.Paren(spec.And(spec.Existence(spec.Query(true)))),
+			)))},
 			ary:     []any{1, 3},
 			indexed: []any{1, 3},
 		},
 		{
 			name: "filter_compare",
-			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+			segs: []*segment{child(spec.Filter(spec.And(
 				spec.Comparison(
-					spec.SingularQuery(false, []spec.Selector{}),
+					spec.SingularQuery(false),
 					spec.GreaterThanEqualTo,
 					spec.Literal(int64(42)),
 				),
-			}}))},
+			)))},
 			ary:      []any{1, 64, 42, 2},
 			indexed:  []any{nil, 64, 42},
 			appended: []any{64, 42},
 		},
 		{
 			name: "key_then_filter_cur_true",
-			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(1))})),
-			}})))},
+			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Index(1)))),
+			))))},
 			ary:      []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
 			indexed:  []any{nil, []any{nil, []any{99, 3}}},
 			appended: []any{[]any{[]any{99, 3}}},
 		},
 		{
 			name: "key_then_filter_cur_false",
-			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Index(2))})),
-			}})))},
+			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Index(2)))),
+			))))},
 			ary:     []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
 			indexed: []any{},
 		},
 		{
 			name: "key_then_filter_root_true",
-			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Index(2))})),
-			}})))},
+			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(true, spec.Child(spec.Index(2)))),
+			))))},
 			ary:      []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
 			indexed:  []any{nil, []any{42, []any{99, 3}}},
 			appended: []any{[]any{42, []any{99, 3}}},
 		},
 		{
 			name: "key_then_filter_root_false",
-			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Index(3))})),
-			}})))},
+			segs: []*segment{child(spec.Index(1)).Append(child(spec.Filter(spec.And(
+				spec.Existence(spec.Query(true, spec.Child(spec.Index(3)))),
+			))))},
 			ary:     []any{[]any{1, 2}, []any{42, []any{99, 3}}, []any{4, 5}},
 			indexed: []any{},
 		},
 		{
 			name: "wildcard_indexes_index",
 			segs: []*segment{
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Index(0)),
 					child(spec.Index(2)),
 				),
@@ -579,7 +577,7 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name:     "nonexistent_branch_index",
-			segs:     []*segment{child(spec.Wildcard).Append(child(spec.Index(3)))},
+			segs:     []*segment{child(spec.Wildcard()).Append(child(spec.Index(3)))},
 			ary:      []any{[]any{0, 1, 2, 3}, []any{0, 1, 2}},
 			indexed:  []any{[]any{nil, nil, nil, 3}},
 			appended: []any{[]any{3}},
@@ -598,14 +596,14 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name:    "wildcard_not_an_array_index_1",
-			segs:    []*segment{child(spec.Wildcard).Append(child(spec.Index(0)))},
+			segs:    []*segment{child(spec.Wildcard()).Append(child(spec.Index(0)))},
 			ary:     []any{"x", true},
 			indexed: []any{},
 		},
 		{
 			name: "mix_wildcard_keys",
 			segs: []*segment{
-				child(spec.Wildcard).Append(child(spec.Name("x"))),
+				child(spec.Wildcard()).Append(child(spec.Name("x"))),
 				child(spec.Index(1)).Append(child(spec.Name("y"))),
 			},
 			ary: []any{
@@ -622,7 +620,7 @@ func TestArraySelection(t *testing.T) {
 		{
 			name: "mix_wildcard_nonexistent_key",
 			segs: []*segment{
-				child(spec.Wildcard).Append(child(spec.Name("x"))),
+				child(spec.Wildcard()).Append(child(spec.Name("x"))),
 				child(spec.Index(1)).Append(child(spec.Name("y"))),
 			},
 			ary: []any{
@@ -639,7 +637,7 @@ func TestArraySelection(t *testing.T) {
 		{
 			name: "mix_wildcard_index",
 			segs: []*segment{
-				child(spec.Wildcard).Append(child(spec.Index(0))),
+				child(spec.Wildcard()).Append(child(spec.Index(0))),
 				child(spec.Index(1)).Append(child(spec.Index(1))),
 			},
 			ary: []any{
@@ -656,7 +654,7 @@ func TestArraySelection(t *testing.T) {
 		{
 			name: "mix_wildcard_nonexistent_index",
 			segs: []*segment{
-				child(spec.Wildcard).Append(child(spec.Index(0))),
+				child(spec.Wildcard()).Append(child(spec.Index(0))),
 				child(spec.Index(1)).Append(child(spec.Index(3))),
 			},
 			ary: []any{
@@ -672,7 +670,7 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name: "wildcard_nonexistent_key",
-			segs: []*segment{child(spec.Wildcard).Append(child(spec.Name("a")))},
+			segs: []*segment{child(spec.Wildcard()).Append(child(spec.Name("a")))},
 			ary: []any{
 				map[string]any{"a": 1, "b": 2},
 				map[string]any{"z": 3, "b": 4},
@@ -681,7 +679,7 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name: "wildcard_nonexistent_middle_key",
-			segs: []*segment{child(spec.Wildcard).Append(child(spec.Name("a")))},
+			segs: []*segment{child(spec.Wildcard()).Append(child(spec.Name("a")))},
 			ary: []any{
 				map[string]any{"a": 1, "b": 2},
 				map[string]any{"z": 3, "b": 4},
@@ -700,8 +698,8 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name: "wildcard_nested_nonexistent_key",
-			segs: []*segment{child(spec.Wildcard).Append(
-				child(spec.Wildcard).Append(child(spec.Name("a"))),
+			segs: []*segment{child(spec.Wildcard()).Append(
+				child(spec.Wildcard()).Append(child(spec.Name("a"))),
 			)},
 			ary: []any{
 				map[string]any{
@@ -716,8 +714,8 @@ func TestArraySelection(t *testing.T) {
 		},
 		{
 			name: "wildcard_nested_nonexistent_index",
-			segs: []*segment{child(spec.Wildcard).Append(
-				child(spec.Wildcard).Append(child(spec.Index(1))),
+			segs: []*segment{child(spec.Wildcard()).Append(
+				child(spec.Wildcard()).Append(child(spec.Index(1))),
 			)},
 			ary: []any{
 				map[string]any{
@@ -928,7 +926,7 @@ func TestSliceSelection(t *testing.T) {
 		},
 		{
 			name: "wildcard_slices_index",
-			segs: []*segment{child(spec.Wildcard).Append(
+			segs: []*segment{child(spec.Wildcard()).Append(
 				child(spec.Slice(0, 2)),
 				child(spec.Slice(3, 4)),
 			)},
@@ -951,7 +949,7 @@ func TestSliceSelection(t *testing.T) {
 		},
 		{
 			name: "nonexistent_branch_index",
-			segs: []*segment{child(spec.Wildcard).Append(child(spec.Slice(3, 5)))},
+			segs: []*segment{child(spec.Wildcard()).Append(child(spec.Slice(3, 5)))},
 			ary:  []any{[]any{0, 1, 2, 3, 4}, []any{0, 1, 2}},
 			exp:  []any{[]any{nil, nil, nil, 3, 4}},
 		},
@@ -969,7 +967,7 @@ func TestSliceSelection(t *testing.T) {
 		},
 		{
 			name: "wildcard_not_an_array_index_1",
-			segs: []*segment{child(spec.Wildcard).Append(child(spec.Slice(0, 5)))},
+			segs: []*segment{child(spec.Wildcard()).Append(child(spec.Slice(0, 5)))},
 			ary:  []any{"x", true},
 			exp:  []any{},
 		},
@@ -1068,7 +1066,7 @@ func TestSliceSelection(t *testing.T) {
 		{
 			name: "slice_nested_nonexistent_key",
 			segs: []*segment{child(spec.Slice(0, 5)).Append(
-				child(spec.Wildcard).Append(child(spec.Name("a"))),
+				child(spec.Wildcard()).Append(child(spec.Name("a"))),
 			)},
 			ary: []any{
 				map[string]any{
@@ -1084,7 +1082,7 @@ func TestSliceSelection(t *testing.T) {
 		{
 			name: "slice_nested_nonexistent_index",
 			segs: []*segment{child(spec.Slice(0, 5)).Append(
-				child(spec.Wildcard).Append(child(spec.Index(1))),
+				child(spec.Wildcard()).Append(child(spec.Index(1))),
 			)},
 			ary: []any{
 				map[string]any{
@@ -1170,7 +1168,7 @@ func TestDescendants(t *testing.T) {
 		},
 		{
 			name:  "nested_wildcard",
-			segs:  []*segment{child(spec.Name("o")).Append(descendant(spec.Wildcard))},
+			segs:  []*segment{child(spec.Name("o")).Append(descendant(spec.Wildcard()))},
 			input: json,
 			exp:   map[string]any{"o": map[string]any{"j": 1, "k": 2}},
 		},
@@ -1378,7 +1376,7 @@ func TestTreeString(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*segment{child(spec.Wildcard)},
+			segs: []*segment{child(spec.Wildcard())},
 			str:  "$\n└── [*]\n",
 		},
 		{
@@ -1427,7 +1425,7 @@ func TestTreeString(t *testing.T) {
 				child(spec.Name("foo")).Append(
 					child(spec.Name("x")),
 					child(spec.Name("y")).Append(
-						child(spec.Wildcard).Append(
+						child(spec.Wildcard()).Append(
 							child(spec.Name("a")),
 							child(spec.Name("b")),
 						),
@@ -1436,7 +1434,7 @@ func TestTreeString(t *testing.T) {
 				child(spec.Name("bar")).Append(
 					child(spec.Name("go")),
 					child(spec.Name("z")).Append(
-						child(spec.Wildcard).Append(
+						child(spec.Wildcard()).Append(
 							child(spec.Name("c")),
 							child(spec.Name("d")).Append(
 								child(spec.Slice(2, 3)),
@@ -1465,7 +1463,7 @@ func TestTreeString(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			segs: []*segment{child(spec.Wildcard)},
+			segs: []*segment{child(spec.Wildcard())},
 			str:  "$\n└── [*]\n",
 		},
 		{
@@ -1515,22 +1513,18 @@ func TestTreeString(t *testing.T) {
 		},
 		{
 			name: "filter",
-			segs: []*segment{child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
-					spec.Existence(spec.Query(true, []*spec.Segment{})),
-				}}),
-			}}))},
+			segs: []*segment{child(spec.Filter(spec.And(
+				spec.Paren(spec.And(spec.Existence(spec.Query(true)))),
+			)))},
 			str: "$\n└── [?($)]\n",
 		},
 		{
 			name: "filter_and_key",
 			segs: []*segment{
 				child(spec.Name("x")),
-				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
-						spec.Existence(spec.Query(true, []*spec.Segment{})),
-					}}),
-				}})),
+				child(spec.Filter(spec.And(
+					spec.Paren(spec.And(spec.Existence(spec.Query(true)))),
+				))),
 			},
 			str: "$\n├── [\"x\"]\n└── [?($)]\n",
 		},
@@ -1539,11 +1533,9 @@ func TestTreeString(t *testing.T) {
 			segs: []*segment{
 				child(
 					spec.Name("x"),
-					spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-						spec.Paren(spec.LogicalOr{spec.LogicalAnd{
-							spec.Existence(spec.Query(true, []*spec.Segment{})),
-						}}),
-					}}),
+					spec.Filter(spec.And(
+						spec.Paren(spec.And(spec.Existence(spec.Query(true)))),
+					)),
 				),
 			},
 			str: "$\n└── [\"x\",?($)]\n",
@@ -1551,11 +1543,9 @@ func TestTreeString(t *testing.T) {
 		{
 			name: "nested_filter",
 			segs: []*segment{child(spec.Name("x")).Append(
-				child(spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-					spec.Paren(spec.LogicalOr{spec.LogicalAnd{
-						spec.Existence(spec.Query(true, []*spec.Segment{})),
-					}}),
-				}})),
+				child(spec.Filter(spec.And(
+					spec.Paren(spec.And(spec.Existence(spec.Query(true)))),
+				))),
 			)},
 			str: "$\n└── [\"x\"]\n    └── [?($)]\n",
 		},
@@ -1959,7 +1949,7 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_then_a",
 			paths: []string{"$[1, *].a", `$["x", 4, *].a`},
 			exp: &Tree{root: child().Append(
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a")),
 				),
 			)},
@@ -1968,7 +1958,7 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_then_a_and_b",
 			paths: []string{"$[1, *].a", `$["x", 4, *].b`},
 			exp: &Tree{root: child().Append(
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a"), spec.Name("b")),
 				),
 			)},
@@ -1977,7 +1967,7 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_then_diff_then_same",
 			paths: []string{"$.*.a.c", `$.*.b.c`},
 			exp: &Tree{root: child().Append(
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a"), spec.Name("b")).Append(
 						child(spec.Name("c")),
 					),
@@ -1988,7 +1978,7 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_then_diff_then_same_deep",
 			paths: []string{"$.*.a.c.d", `$.*.b.c.d`},
 			exp: &Tree{root: child().Append(
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a"), spec.Name("b")).Append(
 						child(spec.Name("c")).Append(
 							child(spec.Name("d")),
@@ -2001,7 +1991,7 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_then_divergent_paths",
 			paths: []string{"$.*.a.b", `$.*.x.y`},
 			exp: &Tree{root: child().Append(
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a")).Append(
 						child(spec.Name("b")),
 					),
@@ -2020,7 +2010,7 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_and_descendant_wildcard_same_child",
 			paths: []string{"$.*.a", "$..*.a"},
 			exp: &Tree{root: child().Append(
-				descendant(spec.Wildcard).Append(
+				descendant(spec.Wildcard()).Append(
 					child(spec.Name("a")),
 				),
 			)},
@@ -2029,10 +2019,10 @@ func TestNew(t *testing.T) {
 			name:  "wildcard_and_descendant_wildcard_diff_child",
 			paths: []string{"$.*.a", "$..*.b"},
 			exp: &Tree{root: child().Append(
-				child(spec.Wildcard).Append(
+				child(spec.Wildcard()).Append(
 					child(spec.Name("a")),
 				),
-				descendant(spec.Wildcard).Append(
+				descendant(spec.Wildcard()).Append(
 					child(spec.Name("b")),
 				),
 			)},
@@ -2298,20 +2288,20 @@ func TestSelectorsFor(t *testing.T) {
 		},
 		{
 			name:   "wildcard",
-			seg:    spec.Child(spec.Wildcard),
-			expect: []spec.Selector{spec.Wildcard},
+			seg:    spec.Child(spec.Wildcard()),
+			expect: []spec.Selector{spec.Wildcard()},
 			wild:   true,
 		},
 		{
 			name:   "mix_wildcard",
-			seg:    spec.Child(spec.Name("x"), spec.Wildcard),
-			expect: []spec.Selector{spec.Wildcard},
+			seg:    spec.Child(spec.Name("x"), spec.Wildcard()),
+			expect: []spec.Selector{spec.Wildcard()},
 			wild:   true,
 		},
 		{
 			name:   "wildcard_mix",
-			seg:    spec.Child(spec.Wildcard, spec.Name("x"), spec.Index(1)),
-			expect: []spec.Selector{spec.Wildcard},
+			seg:    spec.Child(spec.Wildcard(), spec.Name("x"), spec.Index(1)),
+			expect: []spec.Selector{spec.Wildcard()},
 			wild:   true,
 		},
 		{
@@ -2376,9 +2366,9 @@ func TestSelectorsFor(t *testing.T) {
 				spec.Slice(6, 8),
 				spec.Index(7),
 				spec.Index(6),
-				spec.Wildcard,
+				spec.Wildcard(),
 			),
-			expect: []spec.Selector{spec.Wildcard},
+			expect: []spec.Selector{spec.Wildcard()},
 			wild:   true,
 		},
 		{
