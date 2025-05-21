@@ -480,7 +480,7 @@ the same.
 
 ## Copyright
 
-Copyright © 2024 David E. Wheeler
+Copyright © 2024-2025 David E. Wheeler
 
   [⚖️ MIT]: https://img.shields.io/badge/License-MIT-blue.svg "⚖️ MIT License"
   [mit]: https://opensource.org/license/MIT "⚖️ MIT License"
