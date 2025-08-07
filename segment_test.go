@@ -12,7 +12,6 @@ import (
 
 func TestWriteSeg(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -224,14 +223,13 @@ func TestWriteSeg(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.str, tc.seg.String(), tc.name)
+			assert.Equal(t, tc.str, tc.seg.String(), tc.name)
 		})
 	}
 }
 
 func TestIsWildcard(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -248,14 +246,14 @@ func TestIsWildcard(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.seg.isWildcard())
+			assert.Equal(t, tc.exp, tc.seg.isWildcard())
 		})
 	}
 }
 
 func TestHasSelector(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
+
 	simpleExists := mkFilter("$[?@]")
 	diffExists := mkFilter("$[?@.a]")
 
@@ -518,6 +516,8 @@ func TestHasSelector(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, selectorsContain(tc.list, tc.sel))
 			seg := &segment{selectors: tc.list}
 			a.Equal(tc.exp, seg.hasSelector(tc.sel))
@@ -528,7 +528,6 @@ func TestHasSelector(t *testing.T) {
 
 func TestHasSelectors(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 	// simpleExists := mkFilter("$[?@]")
 	// diffExists := mkFilter("$[?@.a]")
 
@@ -582,6 +581,8 @@ func TestHasSelectors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, tc.seg.hasSelectors(tc.selectors))
 			a.Equal(tc.same, tc.seg.hasSameSelectors(tc.selectors))
 			a.Equal(tc.exact, tc.seg.hasExactSelectors(tc.selectors))
@@ -591,7 +592,6 @@ func TestHasSelectors(t *testing.T) {
 
 func TestContainsIndex(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -710,17 +710,21 @@ func TestContainsIndex(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, containsIndex([]spec.Selector{tc.slice}, spec.Index(tc.idx)))
 
 			// Test with actual data.
 			size := 1 + max(abs(tc.idx), abs(tc.slice.Start()), abs(tc.slice.End()))
 			input := make([]any, size)
+
 			switch {
 			case tc.idx >= 0:
 				input[tc.idx] = true
 			case tc.idx < 0:
 				input[len(input)+tc.idx] = true
 			}
+
 			res := tc.slice.Select(input, nil)
 			a.Equal(tc.exp, slices.Contains(res, true))
 		})
@@ -729,7 +733,6 @@ func TestContainsIndex(t *testing.T) {
 
 func TestContainsFilter(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	simpleExists := mkFilter("$[?@]")
 	diffExists := mkFilter("$[?@.a]")
@@ -819,23 +822,24 @@ func TestContainsFilter(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, containsFilter(tc.list, tc.filter))
+			assert.Equal(t, tc.exp, containsFilter(tc.list, tc.filter))
 		})
 	}
 }
 
 func mkFilter(f string) *spec.FilterSelector {
 	p := jsonpath.MustParse(f)
+
 	filter := p.Query().Segments()[0].Selectors()[0]
 	if f, ok := filter.(*spec.FilterSelector); ok {
 		return f
 	}
+
 	panic(fmt.Sprintf("Expected *spec.FilterSelector, got %T", filter))
 }
 
 func TestContainsSlice(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -1040,14 +1044,13 @@ func TestContainsSlice(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, containsSlice(tc.list, tc.slice))
+			assert.Equal(t, tc.exp, containsSlice(tc.list, tc.slice))
 		})
 	}
 }
 
 func TestIsBranch(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name   string
@@ -1212,14 +1215,13 @@ func TestIsBranch(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.seg.isBranch(tc.branch))
+			assert.Equal(t, tc.exp, tc.seg.isBranch(tc.branch))
 		})
 	}
 }
 
 func TestMergeSelectors(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name      string
@@ -1268,16 +1270,16 @@ func TestMergeSelectors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			seg := &segment{selectors: tc.selectors}
 			seg.mergeSelectors(tc.merge)
-			a.Equal(tc.exp, seg.selectors)
+			assert.Equal(t, tc.exp, seg.selectors)
 		})
 	}
 }
 
 func TestMergeChildren(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name     string
@@ -1454,16 +1456,16 @@ func TestMergeChildren(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			seg := &segment{children: tc.children}
 			seg.deduplicate()
-			a.Equal(tc.expect, seg.children)
+			assert.Equal(t, tc.expect, seg.children)
 		})
 	}
 }
 
 func TestRemoveCommonSelectorsFrom(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -1525,6 +1527,8 @@ func TestRemoveCommonSelectorsFrom(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			seg1 := &segment{selectors: tc.sel1}
 			seg2 := &segment{selectors: tc.sel2}
 			a.Equal(tc.res, seg1.removeCommonSelectorsFrom(seg2))
@@ -1535,7 +1539,7 @@ func TestRemoveCommonSelectorsFrom(t *testing.T) {
 
 func TestSameBranches(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
+
 	simpleExists := mkFilter("$[?@]")
 	diffExists := mkFilter("$[?@.a]")
 
@@ -1672,14 +1676,13 @@ func TestSameBranches(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.seg1.sameBranches(tc.seg2))
+			assert.Equal(t, tc.exp, tc.seg1.sameBranches(tc.seg2))
 		})
 	}
 }
 
 func TestMergeSlices(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -1740,7 +1743,7 @@ func TestMergeSlices(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			tc.seg.mergeSlices()
-			a.Equal(tc.exp.selectors, tc.seg.selectors)
+			assert.Equal(t, tc.exp.selectors, tc.seg.selectors)
 		})
 	}
 }

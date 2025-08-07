@@ -32,6 +32,7 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 			if _, ok := b.(spec.SliceSelector); ok {
 				return 0
 			}
+
 			return -1
 		}
 
@@ -51,10 +52,12 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 			// Wildcard trumps all other selectors.
 			return []spec.Selector{spec.Wildcard()}, true
 		}
+
 		if !selectorsContain(ret, sel) {
 			ret = append(ret, sel)
 		}
 	}
+
 	return ret, false
 }
 
@@ -65,6 +68,7 @@ func selectorsFor(seg *spec.Segment) ([]spec.Selector, bool) {
 func NewFixedModeTree(paths ...*jsonpath.Path) *Tree {
 	tree := New(paths...)
 	tree.index = true
+
 	return tree
 }
 
@@ -80,6 +84,7 @@ PATH:
 	for _, path := range paths {
 		// Iterate over the sequence of spec.Segments in the path.
 		segs := path.Query().Segments()
+
 	SEG:
 		for i, seg := range segs {
 			selectors, isWild := selectorsFor(seg)
@@ -119,6 +124,7 @@ PATH:
 					// Descendant wildcard with same descendants wins.
 					child.descendant = true
 					cur = child
+
 					continue SEG
 				}
 				// Nothing to merge, continue with the next child.
@@ -142,6 +148,7 @@ func newChild(cur *segment, seg *spec.Segment, selectors []spec.Selector) *segme
 	child := child(selectors...)
 	child.descendant = seg.IsDescendant()
 	cur.Append(child)
+
 	return child
 }
 
@@ -150,10 +157,12 @@ func newChild(cur *segment, seg *spec.Segment, selectors []spec.Selector) *segme
 func (tree *Tree) String() string {
 	buf := new(strings.Builder)
 	buf.WriteString("$\n")
+
 	lastIndex := len(tree.root.children) - 1
 	for i, c := range tree.root.children {
 		c.writeTo(buf, "", i == lastIndex)
 	}
+
 	return buf.String()
 }
 
@@ -170,9 +179,11 @@ func (tree *Tree) Select(from any) any {
 	case map[string]any:
 		ret := map[string]any{}
 		tree.selectObjectSegment(tree.root, entity, entity, ret)
+
 		if tree.index {
 			return ret
 		}
+
 		return compressObject(ret)
 	case []any:
 		ret := make([]any, 0, cap(entity))
@@ -180,8 +191,10 @@ func (tree *Tree) Select(from any) any {
 			if tree.index {
 				return sel
 			}
+
 			return compressArray(sel)
 		}
+
 		return ret
 	default:
 		// Cannot select from any other type. Following RFC 9535, return nil.
@@ -217,6 +230,7 @@ func compressArray(array []any) []any {
 			ret = append(ret, v)
 		}
 	}
+
 	return slices.Clip(ret)
 }
 
@@ -232,6 +246,7 @@ func compressObject(object map[string]any) map[string]any {
 			object[k] = compressObject(v)
 		}
 	}
+
 	return object
 }
 
@@ -239,6 +254,7 @@ func compressObject(object map[string]any) map[string]any {
 // dst and recurses into its children.
 func (tree *Tree) selectObjectSegment(seg *segment, root any, cur, dst map[string]any) {
 	tree.selectObject(seg, root, cur, dst)
+
 	for _, seg := range seg.children {
 		tree.selectObject(seg, root, cur, dst)
 	}
@@ -264,6 +280,7 @@ func (tree *Tree) selectObject(seg *segment, root any, cur, dst map[string]any) 
 			}
 		}
 	}
+
 	if seg.descendant {
 		tree.descendObject(seg, root, cur, dst)
 	}
@@ -324,13 +341,16 @@ func (tree *Tree) processKey(key string, seg *segment, root any, cur, dst map[st
 // it does not. Otherwise it converts dst to a map and calls selectObject.
 func (tree *Tree) dispatchObject(seg *segment, root any, cur map[string]any, dst any) map[string]any {
 	var sub map[string]any
+
 	if dst != nil {
 		var ok bool
 		if sub, ok = dst.(map[string]any); !ok {
 			// This should not happen.
 			panic(fmt.Sprintf("jsontree: expected destination object but got %T", dst))
 		}
+
 		tree.selectObjectSegment(seg, root, cur, sub)
+
 		return sub
 	}
 
@@ -363,6 +383,7 @@ func (tree *Tree) insert(idx int, dst []any, val any) []any {
 	} else {
 		dst[idx] = val
 	}
+
 	return dst
 }
 
@@ -409,6 +430,7 @@ func (tree *Tree) processIndex(idx int, seg *segment, root any, cur, dst []any) 
 	if prevLen > -1 {
 		dst = dst[:prevLen]
 	}
+
 	return dst
 }
 
@@ -446,6 +468,7 @@ func (tree *Tree) selectArraySegment(seg *segment, root any, cur, dst []any) []a
 	if len(dst) == 0 {
 		return nil
 	}
+
 	return dst
 }
 
@@ -503,6 +526,7 @@ func (tree *Tree) processSlice(seg *segment, sel spec.SliceSelector, root any, c
 			dst = tree.processIndex(i, seg, root, cur, dst)
 		}
 	}
+
 	return dst
 }
 
@@ -510,12 +534,14 @@ func (tree *Tree) processSlice(seg *segment, sel spec.SliceSelector, root any, c
 // dst.
 func (tree *Tree) descendArray(seg *segment, root any, cur, dst []any) []any {
 	dstLen := len(dst)
+
 	for i, v := range cur {
 		// Grab the destination array if it exists.
 		var subDest any
 		if i < dstLen {
 			subDest = dst[i]
 		}
+
 		switch v := v.(type) {
 		case map[string]any:
 			if sub := tree.dispatchObject(seg, root, v, subDest); sub != nil {

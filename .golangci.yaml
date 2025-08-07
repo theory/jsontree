@@ -9,6 +9,7 @@ linters:
     - funcorder # new, too much to move around
     - nestif # redundant, covered by gocyclo
     - nlreturn
+    - noinlineerr
     - testpackage
     - varnamelen
     - wsl

@@ -35,6 +35,7 @@ func abs(x int) int {
 	if x < 0 {
 		return -x
 	}
+
 	return x
 }
 
@@ -52,6 +53,7 @@ func (seg *segment) hasSelectors(selectors []spec.Selector) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -139,11 +141,13 @@ func (seg *segment) hasExactSelectors(selectors []spec.Selector) bool {
 	if len(seg.selectors) != len(selectors) {
 		return false
 	}
+
 	for _, sel := range selectors {
 		if !seg.hasExactSelector(sel) {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -156,6 +160,7 @@ func containsName(selectors []spec.Selector, name spec.Name) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -179,10 +184,12 @@ func containsIndex(selectors []spec.Selector, idx spec.Index) bool {
 
 			// Set sized based on the slice params and determine the bounds.
 			sel := int(idx)
+
 			size := max(abs(sel), s.Start(), s.End())
 			if size != math.MaxInt {
 				size++
 			}
+
 			lower, upper := s.Bounds(size)
 
 			if sel < 0 {
@@ -271,6 +278,7 @@ func sliceInSlice(sub, sup spec.SliceSelector) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -296,6 +304,7 @@ func containsFilter(selectors []spec.Selector, filter *spec.FilterSelector) bool
 // the same selectors as specSeg.
 func (seg *segment) isBranch(specSeg []*spec.Segment) bool {
 	cur := seg
+
 	size := len(specSeg)
 	for i, c := range specSeg {
 		if i >= size || len(cur.children) != 1 {
@@ -311,6 +320,7 @@ func (seg *segment) isBranch(specSeg []*spec.Segment) bool {
 			return false
 		}
 	}
+
 	return len(cur.children) == 0
 }
 
@@ -321,6 +331,7 @@ func (seg *segment) mergeSelectors(selectors []spec.Selector) *segment {
 			seg.selectors = append(seg.selectors, sel)
 		}
 	}
+
 	return seg
 }
 
@@ -333,7 +344,9 @@ func (seg *segment) deduplicate() {
 
 	for _, child := range seg.children {
 		child.deduplicate()
+
 		skip := false
+
 		for i, prev := range merged {
 			if !prev.sameBranches(child) {
 				continue
@@ -343,6 +356,7 @@ func (seg *segment) deduplicate() {
 			case prev.descendant == child.descendant:
 				// Merge.
 				prev.mergeSelectors(child.selectors)
+
 				skip = true
 			case child.descendant:
 				// Remove common selectors from prev.
@@ -355,6 +369,7 @@ func (seg *segment) deduplicate() {
 				skip = prev.removeCommonSelectorsFrom(child)
 			}
 		}
+
 		if !skip {
 			merged = append(merged, child)
 		}
@@ -375,7 +390,9 @@ func (seg *segment) mergeSlices() {
 		moved = false
 		orig := merged
 		merged = merged[:0]
+
 	SEL:
+
 		for _, sel := range orig {
 			if sel, ok := sel.(spec.SliceSelector); ok {
 				for i, ss := range merged {
@@ -383,14 +400,17 @@ func (seg *segment) mergeSlices() {
 						if sliceInSlice(sel, ss) {
 							continue SEL
 						}
+
 						if sliceInSlice(ss, sel) {
 							merged[i] = sel
 							moved = true
+
 							continue SEL
 						}
 					}
 				}
 			}
+
 			merged = append(merged, sel)
 		}
 	}
@@ -412,6 +432,7 @@ func (seg *segment) removeCommonSelectorsFrom(seg2 *segment) bool {
 
 	// Keep just the unique selectors and return true if there are none.
 	seg2.selectors = slices.Clip(uniqueSel)
+
 	return len(uniqueSel) == 0
 }
 
@@ -433,8 +454,10 @@ C1:
 				continue C1
 			}
 		}
+
 		return false
 	}
+
 	return true
 }
 
@@ -443,7 +466,9 @@ func (seg *segment) isWildcard() bool {
 	if len(seg.selectors) != 1 {
 		return false
 	}
+
 	_, ok := seg.selectors[0].(spec.WildcardSelector)
+
 	return ok
 }
 
@@ -452,10 +477,12 @@ func (seg *segment) isWildcard() bool {
 func (seg *segment) String() string {
 	buf := new(strings.Builder)
 	seg.writeSelectors(buf)
+
 	lastIndex := len(seg.children) - 1
 	for i, c := range seg.children {
 		c.writeTo(buf, "", i == lastIndex)
 	}
+
 	return buf.String()
 }
 
@@ -471,24 +498,30 @@ func (seg *segment) writeSelectors(buf *strings.Builder) {
 	if seg.descendant {
 		buf.WriteString("..")
 	}
+
 	buf.WriteByte('[')
+
 	for i, sel := range seg.selectors {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
+
 		buf.WriteString(sel.String())
 	}
+
 	buf.WriteString("]\n")
 }
 
 // writeTo writes the string representation of seg to buf.
 func (seg *segment) writeTo(buf *strings.Builder, prefix string, last bool) {
 	buf.WriteString(prefix)
+
 	if last {
 		buf.WriteString(elbow)
 	} else {
 		buf.WriteString(tee)
 	}
+
 	seg.writeSelectors(buf)
 
 	lastIndex := len(seg.children) - 1

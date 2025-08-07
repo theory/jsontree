@@ -10,7 +10,6 @@ import (
 
 func TestRunRoot(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -37,8 +36,11 @@ func TestRunRoot(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			sel := &Tree{root: &segment{}}
 			a.Equal(tc.val, sel.Select(tc.val))
+
 			switch tc.val.(type) {
 			case map[string]any, []any:
 				return
@@ -54,7 +56,6 @@ func TestRunRoot(t *testing.T) {
 
 func TestObjectSelection(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -307,12 +308,15 @@ func TestObjectSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			tree := Tree{child().Append(tc.segs...), true}
 			a.Equal(tc.exp, tree.Select(tc.obj))
 			// Test non-indexing tree.
 			if tc.name == "any_key_nonexistent_index" {
 				tc.exp = map[string]any{"x": []any{"go"}}
 			}
+
 			tree = Tree{child().Append(tc.segs...), false}
 			a.Equal(tc.exp, tree.Select(tc.obj))
 		})
@@ -345,7 +349,8 @@ func TestObjectSelection(t *testing.T) {
 			// In general a value in dst should only be a map because we sanitize
 			// the segments in advance, but this check ensures it at runtime.
 			tree := &Tree{}
-			a.PanicsWithValue(tc.err, func() {
+
+			assert.PanicsWithValue(t, tc.err, func() {
 				tree.selectObjectSegment(&segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
@@ -354,7 +359,6 @@ func TestObjectSelection(t *testing.T) {
 
 func TestArraySelection(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name     string
@@ -732,12 +736,16 @@ func TestArraySelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			tree := Tree{child().Append(tc.segs...), true}
 			a.Equal(tc.indexed, tree.Select(tc.ary))
 			tree.index = false
+
 			if tc.appended == nil {
 				tc.appended = tc.indexed
 			}
+
 			a.Equal(tc.appended, tree.Select(tc.ary))
 		})
 	}
@@ -770,7 +778,8 @@ func TestArraySelection(t *testing.T) {
 			// sanitize the segments in advance, but this check ensures it at
 			// runtime.
 			tree := &Tree{}
-			a.PanicsWithValue(tc.err, func() {
+
+			assert.PanicsWithValue(t, tc.err, func() {
 				tree.selectArraySegment(&segment{children: tc.segs}, nil, tc.src, tc.dst)
 			})
 		})
@@ -779,7 +788,6 @@ func TestArraySelection(t *testing.T) {
 
 func TestSliceSelection(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -1125,15 +1133,16 @@ func TestSliceSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			tree := Tree{child().Append(tc.segs...), true}
-			a.Equal(tc.exp, tree.Select(tc.ary))
+			assert.Equal(t, tc.exp, tree.Select(tc.ary))
 		})
 	}
 }
 
 func TestDescendants(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
+
 	json := map[string]any{
 		"o": map[string]any{"j": 1, "k": 2},
 		"a": []any{5, 3, []any{map[string]any{"j": 4}, map[string]any{"k": 6}}},
@@ -1263,15 +1272,15 @@ func TestDescendants(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			tree := Tree{child().Append(tc.segs...), true}
-			a.Equal(tc.exp, tree.Select(tc.input))
+			assert.Equal(t, tc.exp, tree.Select(tc.input))
 		})
 	}
 }
 
 func TestFilterSelection(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name   string
@@ -1346,24 +1355,27 @@ func TestFilterSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			path := jsonpath.MustParse(tc.path)
+
 			segs := make([]*segment, len(path.Query().Segments()))
 			for i, s := range path.Query().Segments() {
 				segs[i] = child(s.Selectors()...)
+
 				segs[i].descendant = s.IsDescendant()
 				if i > 0 {
 					segs[i-1].Append(segs[i])
 				}
 			}
+
 			tree := Tree{child().Append(segs[0]), true}
-			a.Equal(tc.output, tree.Select(tc.input))
+			assert.Equal(t, tc.output, tree.Select(tc.input))
 		})
 	}
 }
 
 func TestTreeString(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -1552,15 +1564,15 @@ func TestTreeString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			n := Tree{root: &segment{children: tc.segs}}
-			a.Equal(tc.str, n.String(), tc.name)
+			assert.Equal(t, tc.str, n.String(), tc.name)
 		})
 	}
 }
 
 func TestNew(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -2254,10 +2266,13 @@ func TestNew(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			paths := make([]*jsonpath.Path, len(tc.paths))
 			for i, p := range tc.paths {
 				paths[i] = jsonpath.MustParse(p)
 			}
+
 			a.Equal(tc.exp, New(paths...))
 			tc.exp.index = true
 			a.Equal(tc.exp, NewFixedModeTree(paths...))
@@ -2267,7 +2282,6 @@ func TestNew(t *testing.T) {
 
 func TestSelectorsFor(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name   string
@@ -2393,6 +2407,8 @@ func TestSelectorsFor(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			selectors, wild := selectorsFor(tc.seg)
 			a.Equal(tc.expect, selectors)
 			a.Equal(tc.wild, wild)

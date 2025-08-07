@@ -69,6 +69,7 @@ func Example() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println(string(js))
 	// Output: {
 	//   "profile": {
