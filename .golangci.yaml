@@ -9,6 +9,8 @@ linters:
     - nestif # redundant, covered by gocyclo
     - nlreturn
     - wsl
+    - wsl_v5
+    - noinlineerr
   exclusions:
     generated: lax
     paths:
