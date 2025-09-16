@@ -32,3 +32,7 @@ _build/
 
 # Temp files
 *.tmp
+
+# TinyGo stuff on macOS
+.envrc
+_vendor/
