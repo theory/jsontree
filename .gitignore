@@ -32,3 +32,7 @@ pub/
 
 # Temp files
 *.tmp
+
+# TinyGo stuff on macOS
+.envrc
+_vendor/
