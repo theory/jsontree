@@ -11,11 +11,11 @@ All notable changes to this project will be documented in this file. It uses the
 
 ### ⬆️ Dependency Updates
 
-*   Upgraded github.com/theory/jsonpath to v0.10.0.
+*   Upgraded github.com/theory/jsonpath to v0.10.1.
 
 ### 📔 Notes
 
-*   Upgraded to `golangci-lint` v2.3.1.
+*   Upgraded to `golangci-lint` v2.4.0.
 *   Fixed test name scoping issues with testify objects.
 
   [v0.10.1]: https://github.com/theory/jsonpath/compare/v0.2.0...v0.2.1
