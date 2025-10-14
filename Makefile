@@ -25,8 +25,11 @@ $(DST_DIR)/wasm_exec.js: $(WASM_EXEC)
 	mkdir -p $(@D)
 	cp $< $@
 
-.PHONY: run
+# explicitly build the playground with _vendor/tinygo until
+# https://github.com/tinygo-org/tinygo/issues/4873 fixed.
+.PHONY: run _vendor/tinygo
 run: playground
+	env PATH="$$PWD/_vendor/tinygo/bin:$$PATH" $(MAKE) playground
 	python3 -m http.server --directory $(DST_DIR)
 
 .PHONY: brew-lint-depends # Install linting tools from Homebrew
@@ -35,7 +38,7 @@ brew-lint-depends:
 
 .PHONY: debian-lint-depends # Install linting tools on Debian
 debian-lint-depends:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.4.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.5.0
 
 .PHONY: lint # Lint the project
 lint: .pre-commit-config.yaml
