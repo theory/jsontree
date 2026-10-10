@@ -1,10 +1,10 @@
 module main
 
-go 1.24
+go 1.27
 
-toolchain go1.24.9
+toolchain go1.27.2
 
 require (
-	github.com/theory/jsonpath v0.10.2
-	github.com/theory/jsontree v0.2.1
+	github.com/theory/jsonpath v0.12.2
+	github.com/theory/jsontree v0.2.2
 )

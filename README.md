@@ -68,7 +68,7 @@ will contain the JSON object used in examples from [RFC 9535].
 
 ## Copyright and License
 
-Copyright (c) 2024 David E. Wheeler. Distributed under the [MIT License].
+Copyright (c) 2024-2026 David E. Wheeler. Distributed under the [MIT License].
 
 Based on [Goldmark Playground] the [serde_json_path Sandbox], with icons from
 [Boxicons], all distributed under the [MIT License].

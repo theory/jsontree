@@ -3,12 +3,11 @@ GO ?= go
 SRC_DIR := src
 DST_DIR := pub
 WASM_EXEC := $(shell tinygo env TINYGOROOT)/targets/wasm_exec.js
-# WASM_EXEC := $(shell go env GOROOT)/misc/wasm/wasm_exec.js
 
 playground: $(DST_DIR)/play.wasm $(DST_DIR)/index.html $(DST_DIR)/wasm_exec.js $(DST_DIR)/play.css
 
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go
+$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go go.*
 	@mkdir -p $(@D)
 	GOOS=js GOARCH=wasm tinygo build -no-debug -size short -o $@ $<
 #	cd $(SRC_DIR); GOOS=js GOARCH=wasm go build -o $(ROOT_DIR)/$@ $$(basename "$<")
@@ -25,11 +24,9 @@ $(DST_DIR)/wasm_exec.js: $(WASM_EXEC)
 	mkdir -p $(@D)
 	cp $< $@
 
-# explicitly build the playground with _vendor/tinygo until
-# https://github.com/tinygo-org/tinygo/issues/4873 fixed.
-.PHONY: run _vendor/tinygo
+.PHONY: run
 run: playground
-	env PATH="$$PWD/_vendor/tinygo/bin:$$PATH" $(MAKE) playground
+	$(MAKE) playground
 	python3 -m http.server --directory $(DST_DIR)
 
 .PHONY: brew-lint-depends # Install linting tools from Homebrew
@@ -38,7 +35,7 @@ brew-lint-depends:
 
 .PHONY: debian-lint-depends # Install linting tools on Debian
 debian-lint-depends:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.5.0
+	curl -sSfL https://golangci-lint.run/install.sh | sudo sh -s -- -b /usr/bin v2.13.2
 
 .PHONY: lint # Lint the project
 lint: .pre-commit-config.yaml
@@ -51,12 +48,3 @@ golangci-lint: .golangci.yaml
 .PHONY: clean
 clean:
 	rm -rf $(DST_DIR)
-
-_vendor/tinygo: _vendor/tinygo0.36.0
-	cd _vendor && ln -sF tinygo0.36.0 tinygo
-
-_vendor/tinygo0.36.0:
-	brew install binaryen
-	mkdir -p _vendor
-	curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.36.0/tinygo0.36.0.darwin-arm64.tar.gz | tar zxf -
-	mv tinygo $@
