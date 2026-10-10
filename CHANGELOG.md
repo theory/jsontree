@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file. It uses the
 *   Upgraded github.com/theory/jsonpath to v0.12.2.
 *   Added testing for Go 1.25-1.27; 1.23 still the minimum.
 
-  [v0.2.0]: https://github.com/theory/jsontree/compare/v0.1.2...v0.2.0
+  [v0.2.2]: https://github.com/theory/jsontree/compare/v0.2.1...v0.2.2
 
 ## [v0.2.1] — 2025-09-16
 
@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file. It uses the
 *   Upgraded to `golangci-lint` v2.4.0.
 *   Fixed test name scoping issues with testify objects.
 
-  [v0.10.1]: https://github.com/theory/jsonpath/compare/v0.2.0...v0.2.1
+  [v0.2.1]: https://github.com/theory/jsonpath/compare/v0.2.0...v0.2.1
 
 ## [v0.2.0] — 2025-05-06
 
