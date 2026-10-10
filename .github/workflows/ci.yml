@@ -7,15 +7,15 @@ jobs:
     strategy:
       matrix:
         os: [[🐧, Ubuntu], [🍎, macOS], [🪟, Windows]]
-        go: ["1.24", "1.23"]
+        go: ["1.27", "1.26", "1.25", "1.24", "1.23"]
     name: ${{ matrix.os[0] }} Test Go ${{ matrix.go }} on ${{ matrix.os[1] }}
     runs-on: ${{ matrix.os[1] }}-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with: { submodules: true }
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with: { go-version: "${{ matrix.go }}", check-latest: true }
       - name: Run Tests
         run: make test
@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with: { submodules: true }
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with: { go-version-file: go.mod, check-latest: true }
       - name: Install Dependencies
         run: make debian-lint-depends
@@ -36,7 +36,7 @@ jobs:
       - name: Run Test Coverage
         run: go test -race -coverprofile coverage.txt -covermode atomic ./...
       - name: Upload Coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: cover.out

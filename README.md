@@ -478,9 +478,28 @@ expressions that trigger multiple selection of the same values. Their places
 in the resulting data structure are unchanged, however, so the outcome will be
 the same.
 
+## Strict No LLM/No AI Policy
+
+This software is 100% made by humans for humans and welcomes human
+contributions. That means:
+
+*   No LLM-generated content, whether it be code or prose.
+*   No paraphrasing LLM-generated content.
+*   No LLMs for editing, including fixing spelling or grammatical errors.
+*   No LLMs for translation. English is encouraged, but not required. You are
+    welcome to post in your native language and rely on others to have their
+    own translation tools of choice to interpret your words.
+*   No LLMs for brainstorming and then sharing the results of that
+    brainstorming, even if you create the prose. If you use a chatbot to give
+    you advice on a comment on the issue tracker, that comment is unwelcome.
+*   No LLMs for finding bugs.
+*   No talking about use of chatbot/LLM services.
+
+Borrowed from the [Zig Code of Conduct].
+
 ## Copyright
 
-Copyright © 2024-2025 David E. Wheeler
+Copyright © 2024-2026 David E. Wheeler
 
   [⚖️ MIT]: https://img.shields.io/badge/License-MIT-blue.svg "⚖️ MIT License"
   [mit]: https://opensource.org/license/MIT "⚖️ MIT License"
@@ -504,6 +523,7 @@ Copyright © 2024-2025 David E. Wheeler
   [Selector]: https://pkg.go.dev/jsonpath/spec#Selector
   [ACL]: https://en.wikipedia.org/wiki/Access-control_list
     "Wikipedia: Access-control list"
+  [Zig Code of Conduct]: https://ziglang.org/code-of-conduct/
 
   <!-- Playground links -->
   [play1]: https://theory.github.io/jsonpath/?p=%2524..price&j=%257B%250A%2520%2520%2522store%2522%253A%2520%257B%250A%2520%2520%2520%2520%2522book%2522%253A%2520%255B%250A%2520%2520%2520%2520%2520%2520%257B%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522category%2522%253A%2520%2522reference%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522author%2522%253A%2520%2522Nigel%2520Rees%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522title%2522%253A%2520%2522Sayings%2520of%2520the%2520Century%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522price%2522%253A%25208.95%250A%2520%2520%2520%2520%2520%2520%257D%252C%250A%2520%2520%2520%2520%2520%2520%257B%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522category%2522%253A%2520%2522fiction%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522author%2522%253A%2520%2522Evelyn%2520Waugh%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522title%2522%253A%2520%2522Sword%2520of%2520Honour%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522price%2522%253A%252012.99%250A%2520%2520%2520%2520%2520%2520%257D%252C%250A%2520%2520%2520%2520%2520%2520%257B%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522category%2522%253A%2520%2522fiction%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522author%2522%253A%2520%2522Herman%2520Melville%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522title%2522%253A%2520%2522Moby%2520Dick%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522isbn%2522%253A%2520%25220-553-21311-3%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522price%2522%253A%25208.99%250A%2520%2520%2520%2520%2520%2520%257D%252C%250A%2520%2520%2520%2520%2520%2520%257B%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522category%2522%253A%2520%2522fiction%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522author%2522%253A%2520%2522J.%2520R.%2520R.%2520Tolkien%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522title%2522%253A%2520%2522The%2520Lord%2520of%2520the%2520Rings%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522isbn%2522%253A%2520%25220-395-19395-8%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522price%2522%253A%252022.99%250A%2520%2520%2520%2520%2520%2520%257D%250A%2520%2520%2520%2520%255D%252C%250A%2520%2520%2520%2520%2522bicycle%2522%253A%2520%257B%250A%2520%2520%2520%2520%2520%2520%2522color%2522%253A%2520%2522red%2522%252C%250A%2520%2520%2520%2520%2520%2520%2522price%2522%253A%2520399%250A%2520%2520%2520%2520%257D%250A%2520%2520%257D%250A%257D&o=0

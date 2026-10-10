@@ -13,6 +13,8 @@ linters:
     - testpackage
     - varnamelen
     - wsl
+    - gomodguard # Deprecated, replaced by gomodguard_v2
+    - exhaustruct_v5 # Ignores Go rule that vars default to zero value
   settings:
     errcheck:
       disable-default-exclusions: false
@@ -29,6 +31,8 @@ linters:
       ignore-comments: true
     gocognit:
       min-complexity: 32
+    goconst:
+      ignore-tests: true
   exclusions:
     generated: lax
     rules:
